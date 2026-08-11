@@ -5,7 +5,10 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 1. Настройка CORS (разрешаем запросы с GitHub Pages и кастомные заголовки)
+// 🔑 ЗАДАЙ СВОЙ ПАРОЛЬ АДМИНА ЗДЕСЬ (или через process.env.ADMIN_PASSWORD на Render)
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'adminpass123';
+
+// 1. Настройка CORS
 app.use(cors({
     origin: '*',
     allowedHeaders: ['Content-Type', 'x-admin-password', 'Authorization']
@@ -13,11 +16,21 @@ app.use(cors({
 
 app.use(express.json());
 
-// 2. Раздача статических файлов
+// 2. Middleware для проверки пароля админа
+const checkAdminAuth = (req, res, next) => {
+    const userPassword = req.headers['x-admin-password'];
+
+    if (userPassword !== ADMIN_PASSWORD) {
+        return res.status(401).json({ error: 'Неверный пароль администратора!' });
+    }
+    next(); // Пароль верный — пропускаем дальше
+};
+
+// 3. Раздача статики
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use('/admin', express.static(path.join(__dirname, '../admin')));
 
-// База данных товаров (в памяти)
+// База данных товаров
 let catalog = [
     { id: 1, name: 'Беспроводные наушники TWS', category: 'Электроника', price: 650, image: '', description: '' },
     { id: 2, name: 'Смарт-часы спортивные', category: 'Электроника', price: 1200, image: '', description: '' },
@@ -27,20 +40,19 @@ let catalog = [
     { id: 6, name: 'Рюкзак городской водонепроницаемый', category: 'Одежда и обувь', price: 780, image: '', description: '' }
 ];
 
-// --- ЭНДПОИНТЫ API ---
+// --- РОУТЫ ---
 
-// GET: Получить все товары (для каталога)
+// GET: Получить товары (доступно всем пользователям)
 app.get('/api/products', (req, res) => {
     res.json(catalog);
 });
 
-// Дополнительный роут для совместимости
 app.get('/api/catalog', (req, res) => {
     res.json(catalog);
 });
 
-// POST: Добавить новый товар (вызывается из админки)
-app.post('/api/products', (req, res) => {
+// POST: Добавить товар (ЗАЩИЩЕНО ПАРОЛЕМ!)
+app.post('/api/products', checkAdminAuth, (req, res) => {
     const { name, price, image, description } = req.body;
 
     if (!name || !price) {
@@ -48,7 +60,7 @@ app.post('/api/products', (req, res) => {
     }
 
     const newProduct = {
-        id: Date.now(), // Уникальный ID
+        id: Date.now(),
         name,
         price: Number(price),
         image: image || '',
@@ -56,12 +68,11 @@ app.post('/api/products', (req, res) => {
     };
 
     catalog.push(newProduct);
-    console.log('✅ Добавлен новый товар:', newProduct);
+    console.log('✅ Новый товар добавлен:', newProduct);
 
     res.status(201).json({ message: 'Товар успешно сохранен!', product: newProduct });
 });
 
-// Запуск сервера
 app.listen(PORT, () => {
-    console.log(`🚀 Сервер Prom-маркетплейса запущен на порту ${PORT}`);
+    console.log(`🚀 Сервер запущен на порту ${PORT}`);
 });
