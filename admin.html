@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель администратора</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; margin: 0; padding: 40px 20px; color: #333; }
+        .container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        h1, h2 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+        input, textarea { width: 100%; padding: 10px 12px; border: 1px solid #cccccc; border-radius: 6px; font-size: 14px; }
+        input:focus, textarea:focus { border-color: #007bff; outline: none; }
+        button { width: 100%; background: #007bff; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #0056b3; }
+        .hidden { display: none; }
+        .alert { padding: 10px; border-radius: 6px; margin-bottom: 15px; text-align: center; font-size: 14px; }
+        .alert-error { background: #f8d7da; color: #721c24; }
+        .alert-success { background: #d4edda; color: #155724; }
+        .back-link { display: block; text-align: center; margin-top: 15px; color: #6c757d; text-decoration: none; font-size: 14px; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Форма авторизации -->
+    <div id="authBlock">
+        <h2>Вход в админку</h2>
+        <div id="authMessage"></div>
+        <div class="form-group">
+            <label for="adminPassword">Пароль администратора:</label>
+            <input type="password" id="adminPassword" placeholder="Введите пароль">
+        </div>
+        <button onclick="login()">Войти</button>
+        <a href="index.html" class="back-link">← Вернуться на сайт</a>
+    </div>
+
+    <!-- Панель управления товарами -->
+    <div id="adminPanel" class="hidden">
+        <h1>Добавить новый товар</h1>
+        <div id="statusMessage"></div>
+        <form id="addProductForm">
+            <div class="form-group">
+                <label for="title">Название товара:</label>
+                <input type="text" id="title" required placeholder="Например: Кроссовки Nike">
+            </div>
+            <div class="form-group">
+                <label for="price">Цена (₽):</label>
+                <input type="number" id="price" required placeholder="5000">
+            </div>
+            <div class="form-group">
+                <label for="image">Ссылка на изображение:</label>
+                <input type="url" id="image" required placeholder="https://example.com/photo.jpg">
+            </div>
+            <div class="form-group">
+                <label for="description">Описание товара:</label>
+                <textarea id="description" rows="3" placeholder="Краткое описание товара..."></textarea>
+            </div>
+            <button type="submit">Сохранить товар</button>
+        </form>
+        <a href="catalog.html" class="back-link">Перейти в каталог →</a>
+    </div>
+</div>
+
+<script>
+    // ⚠️ ЗАМЕНИ ЭТУ ССЫЛКУ НА СВОЙ URL ИЗ RENDER:
+    const BACKEND_URL = 'https://ВАША_ССЫЛКА_С_RENDER.onrender.com';
+
+    let savedPassword = '';
+
+    function login() {
+        const passwordInput = document.getElementById('adminPassword').value;
+        const authMessage = document.getElementById('authMessage');
+
+        if (!passwordInput) {
+            authMessage.innerHTML = '<div class="alert alert-error">Введите пароль!</div>';
+            return;
+        }
+
+        savedPassword = passwordInput;
+        document.getElementById('authBlock').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+    }
+
+    document.getElementById('addProductForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const statusMessage = document.getElementById('statusMessage');
+        statusMessage.innerHTML = '<div class="alert">Сохранение...</div>';
+
+        const productData = {
+            title: document.getElementById('title').value,
+            price: Number(document.getElementById('price').value),
+            image: document.getElementById('image').value,
+            description: document.getElementById('description').value
+        };
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/products`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-password': savedPassword
+                },
+                body: JSON.stringify(productData)
+            });
+
+            if (response.ok) {
+                statusMessage.innerHTML = '<div class="alert alert-success">Товар успешно добавлен!</div>';
+                document.getElementById('addProductForm').reset();
+            } else {
+                const err = await response.json();
+                statusMessage.innerHTML = `<div class="alert alert-error">Ошибка: ${err.message || 'Не удалось добавить товар'}</div>`;
+            }
+        } catch (error) {
+            statusMessage.innerHTML = '<div class="alert alert-error">Ошибка сети или сервер недоступен!</div>';
+        }
+    });
+</script>
+</body>
+</html>
