@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'adminpass123';
 
 // 🤖 ДАННЫЕ ТЕЛЕГРАМ БОТА
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8732883413:AAG8a_PO13LBzStSJpMqSDiJyz2rDOrsZ4';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '6432307028';
 
 // 1. Настройка CORS
