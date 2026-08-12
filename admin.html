@@ -7,7 +7,7 @@
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f4f6f9; margin: 0; padding: 40px 20px; color: #333; }
-        .container { max-width: 500px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         h1, h2 { text-align: center; margin-bottom: 20px; color: #2c3e50; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
@@ -21,6 +21,11 @@
         .alert-success { background: #d4edda; color: #155724; }
         .back-link { display: block; text-align: center; margin-top: 15px; color: #6c757d; text-decoration: none; font-size: 14px; }
         .back-link:hover { text-decoration: underline; }
+
+        /* Стили для списка управления товарами */
+        .admin-product-item { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 10px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #eee; font-size: 14px; }
+        .delete-btn { width: auto; background: #dc3545; padding: 6px 12px; font-size: 13px; border-radius: 4px; }
+        .delete-btn:hover { background: #c82333; }
     </style>
 </head>
 <body>
@@ -61,13 +66,18 @@
             </div>
             <button type="submit">Сохранить товар</button>
         </form>
-        <a href="catalog.html" class="back-link">Перейти в каталог →</a>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+
+        <h2>Управление товарами</h2>
+        <div id="admin-products-list">Загрузка списка...</div>
+
+        <a href="index.html" class="back-link" style="margin-top: 25px;">← На главную в магазин</a>
     </div>
 </div>
 
 <script>
     const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
-
     let savedPassword = '';
 
     function login() {
@@ -82,15 +92,65 @@
         savedPassword = passwordInput;
         document.getElementById('authBlock').classList.add('hidden');
         document.getElementById('adminPanel').classList.remove('hidden');
+
+        // Загружаем список товаров для удаления сразу после входа
+        loadAdminProducts();
     }
 
+    // Загрузка товаров в панель администратора
+    async function loadAdminProducts() {
+        const listContainer = document.getElementById('admin-products-list');
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/products`);
+            const products = await response.json();
+
+            if (!products || products.length === 0) {
+                listContainer.innerHTML = '<p style="color: #666; text-align: center;">Нет добавленных товаров</p>';
+                return;
+            }
+
+            listContainer.innerHTML = products.map(p => `
+                <div class="admin-product-item">
+                    <span><b>${p.name}</b> — ${p.price} ₴</span>
+                    <button class="delete-btn" onclick="deleteProduct(${p.id})">Удалить</button>
+                </div>
+            `).join('');
+        } catch (e) {
+            listContainer.innerHTML = '<p style="color: red; text-align: center;">Ошибка загрузки списка</p>';
+        }
+    }
+
+    // Удаление товара по ID
+    async function deleteProduct(id) {
+        if (!confirm('Точно удалить этот товар?')) return;
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/products/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'x-admin-password': savedPassword
+                }
+            });
+
+            if (res.ok) {
+                alert('Товар успешно удален!');
+                loadAdminProducts(); // Обновляем список
+            } else {
+                const err = await res.json();
+                alert('Ошибка: ' + (err.error || 'Не удалось удалить товар'));
+            }
+        } catch (e) {
+            alert('Ошибка сети или сервер недоступен');
+        }
+    }
+
+    // Обработка формы добавления товара
     document.getElementById('addProductForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const statusMessage = document.getElementById('statusMessage');
         statusMessage.innerHTML = '<div class="alert">Сохранение...</div>';
 
-        // ИСПРАВЛЕНО: Ключ 'name' вместо 'title'
         const productData = {
             name: document.getElementById('title').value,
             price: Number(document.getElementById('price').value),
@@ -111,9 +171,9 @@
             if (response.ok) {
                 statusMessage.innerHTML = '<div class="alert alert-success">Товар успешно добавлен!</div>';
                 document.getElementById('addProductForm').reset();
+                loadAdminProducts(); // Обновляем список товаров на странице админки
             } else {
                 const err = await response.json();
-                // ИСПРАВЛЕНО: Считываем err.error для показа подробной ошибки бэкенда
                 statusMessage.innerHTML = `<div class="alert alert-error">Ошибка: ${err.error || err.message || 'Не удалось добавить товар'}</div>`;
             }
         } catch (error) {

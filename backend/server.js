@@ -73,6 +73,21 @@ app.post('/api/products', checkAdminAuth, (req, res) => {
     res.status(201).json({ message: 'Товар успешно сохранен!', product: newProduct });
 });
 
+// DELETE: Удалить товар по ID (ЗАЩИЩЕНО ПАРОЛЕМ!)
+app.delete('/api/products/:id', checkAdminAuth, (req, res) => {
+    const productId = Number(req.params.id);
+    const productIndex = catalog.findIndex(p => p.id === productId);
+
+    if (productIndex === -1) {
+        return res.status(404).json({ error: 'Товар не найден!' });
+    }
+
+    const deletedProduct = catalog.splice(productIndex, 1);
+    console.log('🗑️ Товар удален:', deletedProduct);
+
+    res.json({ message: 'Товар успешно удален!', id: productId });
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
 });
