@@ -25,7 +25,7 @@
 
         /* Блок корзины */
         .cart-sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); height: fit-content; }
-        .cart-item { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; font-size: 14px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; font-size: 14px; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
         .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
@@ -120,6 +120,12 @@
         }
     }
 
+    // 🗑️ Функция удаления конкретного товара из корзины по его индексу
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        updateCartUI();
+    }
+
     function updateCartUI() {
         const cartContainer = document.getElementById('cart-items');
         const totalContainer = document.getElementById('cart-total');
@@ -133,7 +139,12 @@
         let total = 0;
         cartContainer.innerHTML = cart.map((item, index) => {
             total += item.price;
-            return `<div class="cart-item"><span>${item.name}</span> <b>${item.price} ₴</b></div>`;
+            return `
+                <div class="cart-item">
+                    <span>${item.name} — <b>${item.price} ₴</b></span>
+                    <button onclick="removeFromCart(${index})" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 12px;">✕</button>
+                </div>
+            `;
         }).join('');
         totalContainer.innerText = total;
     }
