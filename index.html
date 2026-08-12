@@ -23,8 +23,32 @@
         .price { font-size: 18px; font-weight: bold; color: #111; margin-bottom: 12px; }
         .buy-btn { background: #ff5722; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
 
-        /* Блок корзины */
-        .cart-sidebar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); height: fit-content; }
+        /* Блок корзины (скрыт по умолчанию) */
+        .cart-sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: fit-content;
+            display: none;
+        }
+        .cart-sidebar.open {
+            display: block;
+        }
+
+        @media(max-width: 900px) {
+            .cart-sidebar.open {
+                position: fixed;
+                top: 70px;
+                right: 20px;
+                left: 20px;
+                z-index: 1000;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+            }
+        }
+
         .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; font-size: 14px; }
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
@@ -38,6 +62,7 @@
     <a href="index.html" class="logo">prom<span>.demo</span></a>
     <div class="user-menu">
         <a href="admin.html">Админка</a>
+        <button class="cart-btn" onclick="toggleCart()">🛒 Корзина (<span id="cart-count">0</span>)</button>
     </div>
 </header>
 
@@ -49,8 +74,12 @@
     </main>
 
     <!-- Корзина и оформление заказа -->
-    <aside class="cart-sidebar">
-        <h3>Ваша корзина</h3>
+    <aside class="cart-sidebar" id="cartSidebar">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">Ваша корзина</h3>
+            <button onclick="toggleCart()" style="background: none; border: none; font-size: 18px; cursor: pointer; font-weight: bold;">✕</button>
+        </div>
+
         <div id="cart-items" style="margin: 15px 0; max-height: 200px; overflow-y: auto;">
             <p style="color: #777; font-size: 14px;">Корзина пуста</p>
         </div>
@@ -112,15 +141,20 @@
         }
     }
 
+    function toggleCart() {
+        const sidebar = document.getElementById('cartSidebar');
+        sidebar.classList.toggle('open');
+    }
+
     function addToCart(id) {
         const product = productsList.find(p => p.id === id);
         if (product) {
             cart.push(product);
             updateCartUI();
+            document.getElementById('cartSidebar').classList.add('open');
         }
     }
 
-    // Удаление конкретного товара из корзины по индексу
     function removeFromCart(index) {
         cart.splice(index, 1);
         updateCartUI();
@@ -129,6 +163,9 @@
     function updateCartUI() {
         const cartContainer = document.getElementById('cart-items');
         const totalContainer = document.getElementById('cart-total');
+        const cartCount = document.getElementById('cart-count');
+
+        cartCount.innerText = cart.length;
 
         if (cart.length === 0) {
             cartContainer.innerHTML = '<p style="color: #777; font-size: 14px;">Корзина пуста</p>';
@@ -149,7 +186,6 @@
         totalContainer.innerText = total;
     }
 
-    // Отправка заказа на сервер и в Telegram-бот
     async function checkout(e) {
         e.preventDefault();
         if (cart.length === 0) {
@@ -177,6 +213,7 @@
                 cart = [];
                 updateCartUI();
                 document.getElementById('orderForm').reset();
+                document.getElementById('cartSidebar').classList.remove('open');
             } else {
                 const err = await response.json();
                 alert('Ошибка: ' + (err.error || 'Не удалось отправить заказ'));
