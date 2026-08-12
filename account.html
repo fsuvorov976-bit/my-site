@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Аккаунт — Prom.ua</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f2f4f7; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
+
+        header { background: #4b2e83; padding: 15px 5%; color: white; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-size: 24px; font-weight: bold; color: #fff; text-decoration: none; }
+        .logo span { color: #ffcc00; }
+        .home-link { color: white; text-decoration: none; font-weight: bold; }
+
+        .auth-container {
+            max-width: 400px;
+            width: 100%;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-weight: bold; color: #777; }
+        .tab.active { color: #4b2e83; border-bottom: 2px solid #4b2e83; margin-bottom: -2px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+
+        .auth-btn { background: #4b2e83; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .auth-btn:hover { background: #3b2368; }
+
+        .profile-card { text-align: center; }
+        .profile-card h3 { margin-bottom: 15px; color: #4b2e83; }
+        .logout-btn { background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="index.html" class="logo">prom<span>.demo</span></a>
+    <a href="index.html" class="home-link">← На главную</a>
+</header>
+
+<div class="auth-container" id="authContainer">
+    <!-- Динамический контент (Вход / Регистрация / Код / Кабинет) -->
+</div>
+
+<script>
+    const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
+    let isRegisterMode = false;
+    let registeredEmail = '';
+    let waitingForCode = false;
+
+    function renderAuthPage() {
+        const container = document.getElementById('authContainer');
+        const currentUser = localStorage.getItem('currentUser');
+
+        if (currentUser) {
+            container.innerHTML = `
+                <div class="profile-card">
+                    <h3>Личный кабинет</h3>
+                    <p style="margin-bottom: 10px; font-size: 15px;">Вы вошли как: <b>${currentUser}</b></p>
+                    <button class="logout-btn" onclick="logout()">Выйти из аккаунта</button>
+                </div>
+            `;
+            return;
+        }
+
+        if (waitingForCode) {
+            container.innerHTML = `
+                <h3 style="margin-bottom: 15px; text-align: center;">Введите код из письма</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 15px; text-align: center;">Мы отправили код на <b>${registeredEmail}</b></p>
+                <form onsubmit="verifyCode(event)">
+                    <div class="form-group">
+                        <label>Код подтверждения:</label>
+                        <input type="text" id="verificationCode" required placeholder="123456" style="text-align: center; font-size: 18px; letter-spacing: 3px;">
+                    </div>
+                    <button type="submit" class="auth-btn">Подтвердить</button>
+                </form>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="tabs">
+                <div class="tab active" id="loginTab" onclick="switchTab('login')">Вход</div>
+                <div class="tab" id="registerTab" onclick="switchTab('register')">Регистрация</div>
+            </div>
+
+            <form id="authForm" onsubmit="handleAuth(event)">
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="email" required placeholder="example@gmail.com">
+                </div>
+                <div class="form-group">
+                    <label>Пароль:</label>
+                    <input type="password" id="password" required placeholder="******">
+                </div>
+                <div class="form-group" id="confirmGroup" style="display: none;">
+                    <label>Подтвердите пароль:</label>
+                    <input type="password" id="confirmPassword" placeholder="******">
+                </div>
+                <button type="submit" class="auth-btn" id="submitBtn">Войти</button>
+            </form>
+        `;
+    }
+
+    function switchTab(tab) {
+        isRegisterMode = (tab === 'register');
+        document.getElementById('loginTab').classList.toggle('active', !isRegisterMode);
+        document.getElementById('registerTab').classList.toggle('active', isRegisterMode);
+        document.getElementById('confirmGroup').style.display = isRegisterMode ? 'block' : 'none';
+        document.getElementById('submitBtn').innerText = isRegisterMode ? 'Зарегистрироваться (получить код)' : 'Войти';
+        document.getElementById('authForm').reset();
+    }
+
+    async function handleAuth(e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        if (isRegisterMode) {
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            if (password !== confirmPassword) {
+                alert('Пароли не совпадают!');
+                return;
+            }
+            registeredEmail = email;
+        }
+
+        const endpoint = isRegisterMode ? '/api/register' : '/api/login';
+
+        try {
+            const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message);
+                if (isRegisterMode) {
+                    waitingForCode = true;
+                    renderAuthPage();
+                } else {
+                    localStorage.setItem('currentUser', data.user.email);
+                    renderAuthPage();
+                }
+            } else {
+                alert('Ошибка: ' + (data.error || 'Что-то пошло не так'));
+            }
+        } catch (err) {
+            alert('Ошибка соединения с сервером!');
+        }
+    }
+
+    async function verifyCode(e) {
+        e.preventDefault();
+        const code = document.getElementById('verificationCode').value;
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: registeredEmail, code })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(data.message);
+                localStorage.setItem('currentUser', data.user.email);
+                waitingForCode = false;
+                renderAuthPage();
+            } else {
+                alert('Ошибка: ' + (data.error || 'Неверный код'));
+            }
+        } catch (err) {
+            alert('Ошибка соединения с сервером!');
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('currentUser');
+        renderAuthPage();
+    }
+
+    renderAuthPage();
+</script>
+
+</body>
+</html>

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,6 +12,19 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'adminpass123';
 // 🤖 ДАННЫЕ ТЕЛЕГРАМ БОТА
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4';
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '6432307028';
+
+// ✉️ НАСТРОЙКА ПОЧТЫ (NODEMAILER)
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER || 'fsuvorov976@gmail.com',
+        pass: process.env.EMAIL_PASS || 'auot luiq ljux ksnf'
+    }
+});
+
+// Базы данных в памяти
+let users = [];        // Зарегистрированные и подтвержденные пользователи
+let pendingUsers = []; // Пользователи, ожидающие ввода кода подтверждения
 
 // 1. Настройка CORS
 app.use(cors({
@@ -44,7 +58,7 @@ let catalog = [
     { id: 6, name: 'Рюкзак городской водонепроницаемый', category: 'Одежда и обувь', price: 780, image: '', description: '' }
 ];
 
-// --- РОУТЫ ---
+// --- РОУТЫ КАТАЛОГА И АДМИНКИ ---
 
 app.get('/api/products', (req, res) => {
     res.json(catalog);
@@ -93,7 +107,74 @@ app.delete('/api/products/:id', checkAdminAuth, (req, res) => {
     res.json({ message: 'Товар успешно удален!', id: productId });
 });
 
-// --- РОУТ ДЛЯ ОФОРМЛЕНИЯ ЗАКАЗА И ОТПРАВКИ В ТЕЛЕГРАМ (Без разметки Markdown для стабильности) ---
+// --- РОУТЫ ДЛЯ АВТОРИЗАЦИИ И ПОДТВЕРЖДЕНИЯ ПО EMAIL ---
+
+// 1. Регистрация (генерация и отправка кода на введенный пользователем email)
+app.post('/api/register', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Заполните все поля' });
+    }
+
+    if (users.find(u => u.email === email)) {
+        return res.status(400).json({ error: 'Такой email уже зарегистрирован' });
+    }
+
+    // Генерируем 6-значный код
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Сохраняем во временный массив
+    pendingUsers = pendingUsers.filter(u => u.email !== email);
+    pendingUsers.push({ email, password, code: verificationCode });
+
+    try {
+        await transporter.sendMail({
+            from: '"Prom Demo" <fsuvorov1488@gmail.com>',
+            to: email, // Код уйдет именно на тот email, который вписал пользователь при регистрации
+            subject: 'Код подтверждения регистрации',
+            text: `Ваш код подтверждения: ${verificationCode}`
+        });
+
+        console.log(`✉️ Код подтверждения отправлен на ${email}: ${verificationCode}`);
+        res.json({ success: true, message: 'Код подтверждения отправлен на ваш email!' });
+    } catch (error) {
+        console.error('❌ Ошибка отправки email:', error);
+        res.status(500).json({ error: 'Не удалось отправить письмо. Проверьте настройки почты.' });
+    }
+});
+
+// 2. Проверка кода подтверждения
+app.post('/api/verify', (req, res) => {
+    const { email, code } = req.body;
+
+    const pendingIndex = pendingUsers.findIndex(u => u.email === email && u.code === code);
+    if (pendingIndex === -1) {
+        return res.status(400).json({ error: 'Неверный код или истек срок действия' });
+    }
+
+    const user = pendingUsers[pendingIndex];
+    users.push({ id: Date.now(), email: user.email, password: user.password });
+    pendingUsers.splice(pendingIndex, 1); // Удаляем из временных
+
+    console.log(`✅ Пользователь ${user.email} успешно подтвержден и зарегистрирован!`);
+    res.json({ success: true, message: 'Аккаунт успешно подтвержден!', user: { email: user.email } });
+});
+
+// 3. Вход в аккаунт
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body;
+
+    const user = users.find(u => u.email === email && u.password === password);
+    if (!user) {
+        return res.status(400).json({ error: 'Неверный email или пароль' });
+    }
+
+    console.log(`🔑 Успешный вход пользователя: ${email}`);
+    res.json({ success: true, message: 'Успешный вход!', user: { email: user.email } });
+});
+
+// --- РОУТ ДЛЯ ОФОРМЛЕНИЯ ЗАКАЗА И ОТПРАВКИ В ТЕЛЕГРАМ ---
 app.post('/api/order', async (req, res) => {
     const { name, surname, address, phone, cart } = req.body;
 
