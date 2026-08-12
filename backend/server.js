@@ -5,8 +5,12 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔑 ПАРОЛЬ АДМИНА (можешь поменять значение в кавычках)
+// 🔑 ПАРОЛЬ АДМИНА
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'adminpass123';
+
+// 🤖 ДАННЫЕ ТЕЛЕГРАМ БОТА
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8732883413:AAG8a_PO13LBzStSJpMqSDiJyz2rDOrsZ4';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '6432307028';
 
 // 1. Настройка CORS
 app.use(cors({
@@ -91,6 +95,60 @@ app.delete('/api/products/:id', checkAdminAuth, (req, res) => {
     console.log('🗑️ Товар удален:', deletedProduct);
 
     res.json({ message: 'Товар успешно удален!', id: productId });
+});
+
+// --- РОУТ ДЛЯ ОФОРМЛЕНИЯ ЗАКАЗА И ОТПРАВКИ В ТЕЛЕГРАМ ---
+app.post('/api/order', async (req, res) => {
+    const { name, surname, address, phone, cart } = req.body;
+
+    if (!name || !phone || !cart || cart.length === 0) {
+        return res.status(400).json({ error: 'Недостаточно данных для заказа!' });
+    }
+
+    let total = 0;
+    let productsListText = cart.map((item, index) => {
+        total += item.price;
+        return `${index + 1}. ${item.name} — ${item.price} ₴`;
+    }).join('\n');
+
+    const message = `
+🛒 **Новый заказ в интернет-магазине!**
+
+👤 **Имя:** ${name} ${surname}
+📞 **Телефон:** ${phone}
+📍 **Адрес:** ${address}
+
+📦 **Товары:**
+${productsListText}
+
+💰 **Итого к оплате:** ${total} ₴
+    `.trim();
+
+    try {
+        const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const response = await fetch(tgUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: message,
+                parse_mode: 'Markdown'
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+            console.log('✅ Заказ успешно отправлен в Telegram!');
+            res.json({ success: true, message: 'Заказ успешно оформлен!' });
+        } else {
+            console.error('❌ Ошибка Telegram API:', data);
+            res.status(500).json({ error: 'Ошибка при отправке в Telegram' });
+        }
+    } catch (error) {
+        console.error('❌ Ошибка сети:', error);
+        res.status(500).json({ error: 'Не удалось связаться с сервером Telegram' });
+    }
 });
 
 app.listen(PORT, () => {
