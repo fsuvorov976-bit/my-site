@@ -120,7 +120,7 @@
         }
     }
 
-    // 🗑️ Функция удаления конкретного товара из корзины по его индексу
+    // Удаление конкретного товара из корзины по индексу
     function removeFromCart(index) {
         cart.splice(index, 1);
         updateCartUI();
@@ -149,24 +149,41 @@
         totalContainer.innerText = total;
     }
 
-    function checkout(e) {
+    // Отправка заказа на сервер и в Telegram-бот
+    async function checkout(e) {
         e.preventDefault();
         if (cart.length === 0) {
             alert('Ваша корзина пуста!');
             return;
         }
 
-        const name = document.getElementById('name').value;
-        const surname = document.getElementById('surname').value;
-        const address = document.getElementById('address').value;
-        const phone = document.getElementById('phone').value;
+        const orderData = {
+            name: document.getElementById('name').value,
+            surname: document.getElementById('surname').value,
+            address: document.getElementById('address').value,
+            phone: document.getElementById('phone').value,
+            cart: cart
+        };
 
-        alert(`Спасибо за заказ, ${name} ${surname}!\nВаш заказ на сумму ${document.getElementById('cart-total').innerText} ₴ принят.\nДоставка по адресу: ${address}\nМы свяжемся с вами по номеру: ${phone}`);
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/order`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
 
-        // Очищаем корзину и форму
-        cart = [];
-        updateCartUI();
-        document.getElementById('orderForm').reset();
+            if (response.ok) {
+                alert('Спасибо за заказ! Заказ успешно отправлен менеджеру.');
+                cart = [];
+                updateCartUI();
+                document.getElementById('orderForm').reset();
+            } else {
+                const err = await response.json();
+                alert('Ошибка: ' + (err.error || 'Не удалось отправить заказ'));
+            }
+        } catch (error) {
+            alert('Ошибка сети или сервер недоступен!');
+        }
     }
 
     loadCatalog();
