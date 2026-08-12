@@ -130,7 +130,7 @@ app.post('/api/register', async (req, res) => {
 
     try {
         await transporter.sendMail({
-            from: '"Prom Demo" <fsuvorov1488@gmail.com>', // Исправлено на ваш актуальный ящик
+            from: '"Prom Demo" <fsuvorov976@gmail.com>', // Исправлено на ваш актуальный ящик
             to: email,
             subject: 'Код подтверждения регистрации',
             text: `Ваш код подтверждения: ${verificationCode}`
