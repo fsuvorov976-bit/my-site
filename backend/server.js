@@ -27,7 +27,7 @@ const checkAdminAuth = (req, res, next) => {
     if (userPassword !== ADMIN_PASSWORD) {
         return res.status(401).json({ error: 'Неверный пароль администратора!' });
     }
-    next(); // Пароль верный — пропускаем дальше
+    next();
 };
 
 // 3. Раздача статики
@@ -46,7 +46,6 @@ let catalog = [
 
 // --- РОУТЫ ---
 
-// GET: Получить товары (доступно всем пользователям)
 app.get('/api/products', (req, res) => {
     res.json(catalog);
 });
@@ -55,12 +54,10 @@ app.get('/api/catalog', (req, res) => {
     res.json(catalog);
 });
 
-// POST: Проверка пароля администратора (для входа в админку)
 app.post('/api/admin/login', checkAdminAuth, (req, res) => {
     res.json({ success: true, message: 'Авторизация успешна!' });
 });
 
-// POST: Добавить товар (ЗАЩИЩЕНО ПАРОЛЕМ!)
 app.post('/api/products', checkAdminAuth, (req, res) => {
     const { name, price, image, description } = req.body;
 
@@ -82,7 +79,6 @@ app.post('/api/products', checkAdminAuth, (req, res) => {
     res.status(201).json({ message: 'Товар успешно сохранен!', product: newProduct });
 });
 
-// DELETE: Удалить товар по ID (ЗАЩИЩЕНО ПАРОЛЕМ!)
 app.delete('/api/products/:id', checkAdminAuth, (req, res) => {
     const productId = Number(req.params.id);
     const productIndex = catalog.findIndex(p => p.id === productId);
@@ -97,7 +93,7 @@ app.delete('/api/products/:id', checkAdminAuth, (req, res) => {
     res.json({ message: 'Товар успешно удален!', id: productId });
 });
 
-// --- РОУТ ДЛЯ ОФОРМЛЕНИЯ ЗАКАЗА И ОТПРАВКИ В ТЕЛЕГРАМ ---
+// --- РОУТ ДЛЯ ОФОРМЛЕНИЯ ЗАКАЗА И ОТПРАВКИ В ТЕЛЕГРАМ (Без разметки Markdown для стабильности) ---
 app.post('/api/order', async (req, res) => {
     const { name, surname, address, phone, cart } = req.body;
 
@@ -108,21 +104,16 @@ app.post('/api/order', async (req, res) => {
     let total = 0;
     let productsListText = cart.map((item, index) => {
         total += item.price;
-        return `${index + 1}. ${item.name} — ${item.price} ₴`;
+        return `${index + 1}. ${item.name} - ${item.price} ₴`;
     }).join('\n');
 
-    const message = `
-🛒 **Новый заказ в интернет-магазине!**
-
-👤 **Имя:** ${name} ${surname}
-📞 **Телефон:** ${phone}
-📍 **Адрес:** ${address}
-
-📦 **Товары:**
-${productsListText}
-
-💰 **Итого к оплате:** ${total} ₴
-    `.trim();
+    const message =
+        "🛒 Новый заказ в интернет-магазине!\n\n" +
+        "👤 Имя: " + name + " " + surname + "\n" +
+        "📞 Телефон: " + phone + "\n" +
+        "📍 Адрес: " + address + "\n\n" +
+        "📦 Товары:\n" + productsListText + "\n\n" +
+        "💰 Итого к оплате: " + total + " ₴";
 
     try {
         const tgUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -131,8 +122,7 @@ ${productsListText}
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chat_id: TELEGRAM_CHAT_ID,
-                text: message,
-                parse_mode: 'Markdown'
+                text: message
             })
         });
 
@@ -153,4 +143,4 @@ ${productsListText}
 
 app.listen(PORT, () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
-});
+});ы
