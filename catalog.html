@@ -8,13 +8,15 @@
         nav a { margin-right: 15px; text-decoration: none; color: #0066cc; font-weight: bold; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-top: 20px; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 150px; object-fit: cover; border-radius: 4px; margin-bottom: 10px; }
+        .price { font-weight: bold; color: #27ae60; margin-top: 10px; }
     </style>
 </head>
 <body>
 <header>
     <nav>
-        <a href="/">🏠 Главная</a>
-        <a href="/catalog.html">📦 Каталог</a>
+        <a href="index.html">🏠 Главная</a>
+        <a href="catalog.html">📦 Каталог</a>
     </nav>
 </header>
 
@@ -23,6 +25,49 @@
     <div id="catalog-list" class="grid">Загрузка товаров...</div>
 </main>
 
-<script src="js/catalog.js"></script>
+<script>
+    // 🌐 Адрес твоего бэкенда на Render
+    const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
+
+    async function loadCatalog() {
+        const catalogList = document.getElementById('catalog-list');
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/products`);
+
+            if (!response.ok) {
+                throw new Error('Ошибка сервера');
+            }
+
+            const products = await response.json();
+
+            if (products.length === 0) {
+                catalogList.innerHTML = '<p>Товаров пока нет.</p>';
+                return;
+            }
+
+            // Очищаем и выводим карточки товаров
+            catalogList.innerHTML = '';
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    ${product.image ? `<img src="${product.image}" alt="${product.name}">` : ''}
+                    <h3>${product.name}</h3>
+                    <p>${product.description || 'Без описания'}</p>
+                    <div class="price">${product.price} ₴</div>
+                `;
+                catalogList.appendChild(card);
+            });
+
+        } catch (error) {
+            console.error(error);
+            catalogList.innerHTML = '<p style="color: red;">Ошибка загрузки товаров от сервера</p>';
+        }
+    }
+
+    // Запускаем загрузку при открытии страницы
+    loadCatalog();
+</script>
 </body>
 </html>

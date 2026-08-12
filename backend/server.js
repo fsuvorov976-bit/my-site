@@ -5,7 +5,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔑 ВАШ ПАРОЛЬ АДМИНА (можешь поменять значение в кавычках)
+// 🔑 ПАРОЛЬ АДМИНА (можешь поменять значение в кавычках)
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'adminpass123';
 
 // 1. Настройка CORS
