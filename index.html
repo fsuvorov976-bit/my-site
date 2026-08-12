@@ -6,12 +6,73 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f2f4f7; color: #333; }
+
+        /* Шапка */
         header { background: #4b2e83; padding: 15px 5%; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .menu-toggle { background: none; border: none; color: white; font-size: 24px; cursor: pointer; display: flex; flex-direction: column; gap: 5px; }
+        .menu-toggle span { display: block; width: 25px; height: 3px; background: white; border-radius: 2px; }
+
         .logo { font-size: 24px; font-weight: bold; color: #fff; text-decoration: none; }
         .logo span { color: #ffcc00; }
         .user-menu { display: flex; gap: 15px; align-items: center; }
-        .user-menu a { color: white; text-decoration: none; font-weight: bold; }
         .cart-btn { background: #ff5722; color: white; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; border: none; }
+
+        /* Боковое меню (выезжающая шторка) */
+        .sidebar-menu {
+            position: fixed;
+            top: 0; left: -280px; width: 280px; height: 100%;
+            background: white;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+            z-index: 1100;
+            transition: left 0.3s ease;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .sidebar-menu.open {
+            left: 0;
+        }
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .sidebar-links {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .sidebar-links a {
+            color: #333;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .sidebar-links a:hover {
+            background: #f2f4f7;
+            color: #4b2e83;
+        }
+
+        /* Затемнение фона при открытом меню */
+        .backdrop {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            z-index: 1050;
+        }
+        .backdrop.open {
+            display: block;
+        }
 
         .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
 
@@ -22,7 +83,7 @@
         .price { font-size: 18px; font-weight: bold; color: #111; margin-bottom: 12px; }
         .buy-btn { background: #ff5722; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
 
-        /* Мобильное всплывающее окно (модал) для корзины */
+        /* Всплывающее окно корзины */
         .cart-modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -30,11 +91,9 @@
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 1200;
         }
-        .cart-modal-overlay.open {
-            display: flex;
-        }
+        .cart-modal-overlay.open { display: flex; }
         .cart-modal {
             background: white;
             padding: 25px;
@@ -55,10 +114,35 @@
 </head>
 <body>
 
+<!-- Затемнение фона -->
+<div class="backdrop" id="backdrop" onclick="toggleSidebar()"></div>
+
+<!-- Боковое меню с тремя полосками -->
+<div class="sidebar-menu" id="sidebarMenu">
+    <div class="sidebar-header">
+        <span>Меню</span>
+        <button onclick="toggleSidebar()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
+    </div>
+    <div class="sidebar-links">
+        <a href="index.html">🏠 Главная (Каталог)</a>
+        <a href="#" onclick="alert('Раздел аккаунта находится в разработке'); toggleSidebar();">👤 Аккаунт</a>
+        <a href="#" onclick="alert('Интернет-магазин на базе Prom Demo — лучший выбор для вашего бизнеса!'); toggleSidebar();">ℹ️ Информация о нас</a>
+        <a href="#" onclick="alert('Свяжитесь с нами: support@prom.demo | Телефон: +380000000000'); toggleSidebar();">📞 Свяжитесь с нами</a>
+        <a href="admin.html">⚙️ Админка</a>
+    </div>
+</div>
+
 <header>
-    <a href="index.html" class="logo">prom<span>.demo</span></a>
+    <div class="header-left">
+        <!-- Кнопка с тремя полосками -->
+        <button class="menu-toggle" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <a href="index.html" class="logo">prom<span>.demo</span></a>
+    </div>
     <div class="user-menu">
-        <a href="admin.html">Админка</a>
         <button class="cart-btn" onclick="toggleCart()">🛒 Корзина (<span id="cart-count">0</span>)</button>
     </div>
 </header>
@@ -111,6 +195,12 @@
     let cart = [];
     let productsList = [];
 
+    // Открытие/закрытие бокового меню
+    function toggleSidebar() {
+        document.getElementById('sidebarMenu').classList.toggle('open');
+        document.getElementById('backdrop').classList.toggle('open');
+    }
+
     async function loadCatalog() {
         try {
             const res = await fetch(`${BACKEND_URL}/api/catalog`);
@@ -149,7 +239,7 @@
         if (product) {
             cart.push(product);
             updateCartUI();
-            toggleCart(); // Автоматически открывает окно корзины при добавлении товара
+            toggleCart();
         }
     }
 
@@ -200,7 +290,7 @@
         };
 
         try {
-            const response = <- fetch(`${BACKEND_URL}/api/order`, {
+            const response = await fetch(`${BACKEND_URL}/api/order`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(orderData)
@@ -211,7 +301,7 @@
                 cart = [];
                 updateCartUI();
                 document.getElementById('orderForm').reset();
-                toggleCart(); // Закрываем окно после успешного заказа
+                toggleCart();
             } else {
                 const err = await response.json();
                 alert('Ошибка: ' + (err.error || 'Не удалось отправить заказ'));
