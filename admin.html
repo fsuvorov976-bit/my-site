@@ -48,7 +48,7 @@
                 <input type="text" id="title" required placeholder="Например: Кроссовки Nike">
             </div>
             <div class="form-group">
-                <label for="price">Цена (₽):</label>
+                <label for="price">Цена (₴):</label>
                 <input type="number" id="price" required placeholder="5000">
             </div>
             <div class="form-group">
@@ -66,7 +66,6 @@
 </div>
 
 <script>
-
     const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
 
     let savedPassword = '';
@@ -91,8 +90,9 @@
         const statusMessage = document.getElementById('statusMessage');
         statusMessage.innerHTML = '<div class="alert">Сохранение...</div>';
 
+        // ИСПРАВЛЕНО: Ключ 'name' вместо 'title'
         const productData = {
-            title: document.getElementById('title').value,
+            name: document.getElementById('title').value,
             price: Number(document.getElementById('price').value),
             image: document.getElementById('image').value,
             description: document.getElementById('description').value
@@ -113,7 +113,8 @@
                 document.getElementById('addProductForm').reset();
             } else {
                 const err = await response.json();
-                statusMessage.innerHTML = `<div class="alert alert-error">Ошибка: ${err.message || 'Не удалось добавить товар'}</div>`;
+                // ИСПРАВЛЕНО: Считываем err.error для показа подробной ошибки бэкенда
+                statusMessage.innerHTML = `<div class="alert alert-error">Ошибка: ${err.error || err.message || 'Не удалось добавить товар'}</div>`;
             }
         } catch (error) {
             statusMessage.innerHTML = '<div class="alert alert-error">Ошибка сети или сервер недоступен!</div>';
