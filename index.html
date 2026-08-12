@@ -17,6 +17,7 @@
         .search-bar button { padding: 10px 20px; background: #ffcc00; border: none; border-radius: 0 4px 4px 0; cursor: pointer; font-weight: bold; }
 
         .user-menu { display: flex; gap: 15px; align-items: center; }
+        .user-menu a { color: white; text-decoration: none; font-weight: bold; }
         .cart-btn { background: #ff5722; color: white; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px; }
 
         /* Основной контент */
@@ -39,9 +40,10 @@
         .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-2px); }
 
         .img-placeholder { width: 100%; height: 160px; background: #f0f0f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 40px; margin-bottom: 10px; }
+        .card img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; }
 
         .status { font-size: 12px; color: #4caf50; font-weight: bold; margin-bottom: 5px; }
-        .product-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; color: #333; text-decoration: none; }
+        .product-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; color: #333; }
         .price { font-size: 18px; font-weight: bold; color: #111; margin-bottom: 12px; }
 
         .buy-btn { background: #ff5722; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: background 0.2s; }
@@ -52,7 +54,7 @@
 
 <!-- Шапка сайта -->
 <header>
-    <a href="#" class="logo">prom<span>.demo</span></a>
+    <a href="index.html" class="logo">prom<span>.demo</span></a>
 
     <div class="search-bar">
         <input type="text" placeholder="Я ищу...">
@@ -60,7 +62,7 @@
     </div>
 
     <div class="user-menu">
-        <a href="./admin.html">Админка</a>
+        <a href="admin.html">Админка</a>
         <div class="cart-btn">
             🛒 Корзина: <span id="cart-count">0</span>
         </div>
@@ -92,27 +94,38 @@
 </div>
 
 <script>
+    // 🌐 Адрес твоего бэкенда на Render
+    const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
     let cartCount = 0;
 
-    // Загрузка товаров из нашего Node.js сервера
-    fetch('/api/catalog')
+    // Загрузка товаров с сервера Render
+    fetch(`${BACKEND_URL}/api/catalog`)
         .then(res => res.json())
         .then(data => {
             const container = document.getElementById('catalog');
 
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p>Товаров пока нет.</p>';
+                return;
+            }
+
             container.innerHTML = data.map(item => `
-          <div class="card">
-            <div>
-              <div class="img-placeholder">📦</div>
-              <div class="status">✓ В наличии</div>
-              <div class="product-title">${item.name}</div>
-            </div>
-            <div>
-              <div class="price">${item.price} ₴</div>
-              <button class="buy-btn" onclick="addToCart('${item.name}')">Купить</button>
-            </div>
-          </div>
-        `).join('');
+                <div class="card">
+                    <div>
+                        ${item.image ? `<img src="${item.image}" alt="${item.name}">` : '<div class="img-placeholder">📦</div>'}
+                        <div class="status">✓ В наличии</div>
+                        <div class="product-title">${item.name}</div>
+                    </div>
+                    <div>
+                        <div class="price">${item.price} ₴</div>
+                        <button class="buy-btn" onclick="addToCart('${item.name}')">Купить</button>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('catalog').innerHTML = '<p style="color: red;">Ошибка загрузки товаров от сервера</p>';
         });
 
     // Функция добавления в корзину
