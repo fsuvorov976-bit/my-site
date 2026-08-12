@@ -198,6 +198,9 @@
 </div>
 
 <script>
+    // ⚠️ ЗАМЕНИТЕ ЭТУ СТРОКУ НА РЕАЛЬНЫЙ URL ВАШЕГО СЕРВЕРА НА RENDER (без слэша на конце)
+    const API_URL = 'https://my-site-backend-b81a.onrender.com';
+
     // Элементы интерфейса
     const loginFormSection = document.getElementById('loginFormSection');
     const registerFormSection = document.getElementById('registerFormSection');
@@ -266,7 +269,7 @@
         const password = document.getElementById('regPassword').value;
 
         try {
-            const response = await fetch('/api/register', {
+            const response = await fetch(`${API_URL}/api/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -295,7 +298,7 @@
         const code = document.getElementById('verifyCode').value;
 
         try {
-            const response = await fetch('/api/verify', {
+            const response = await fetch(`${API_URL}/api/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: registeredEmail, code })
@@ -324,7 +327,7 @@
         const password = document.getElementById('loginPassword').value;
 
         try {
-            const response = await fetch('/api/login', {
+            const response = await fetch(`${API_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })

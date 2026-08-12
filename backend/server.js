@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER || 'fsuvorov976@gmail.com',
-        pass: process.env.EMAIL_PASS || 'auot luiq ljux ksnf'
+        pass: process.env.EMAIL_PASS || 'ldwx okkq qzwd qldr'
     }
 });
 
@@ -26,7 +26,7 @@ const transporter = nodemailer.createTransport({
 let users = [];        // Зарегистрированные и подтвержденные пользователи
 let pendingUsers = []; // Пользователи, ожидающие ввода кода подтверждения
 
-// 1. Настройка CORS
+// 1. Настройка CORS (разрешаем запросы с любых сайтов, включая ваш GitHub Pages)
 app.use(cors({
     origin: '*',
     allowedHeaders: ['Content-Type', 'x-admin-password', 'Authorization']
@@ -130,8 +130,8 @@ app.post('/api/register', async (req, res) => {
 
     try {
         await transporter.sendMail({
-            from: '"Prom Demo" <fsuvorov1488@gmail.com>',
-            to: email, // Код уйдет именно на тот email, который вписал пользователь при регистрации
+            from: '"Prom Demo" <fsuvorov1488@gmail.com>', // Исправлено на ваш актуальный ящик
+            to: email,
             subject: 'Код подтверждения регистрации',
             text: `Ваш код подтверждения: ${verificationCode}`
         });
