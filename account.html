@@ -2,139 +2,271 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Аккаунт — Prom.ua</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет - Интернет-магазин</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f2f4f7; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
 
-        header { background: #4b2e83; padding: 15px 5%; color: white; display: flex; align-items: center; justify-content: space-between; }
-        .logo { font-size: 24px; font-weight: bold; color: #fff; text-decoration: none; }
-        .logo span { color: #ffcc00; }
-        .home-link { color: white; text-decoration: none; font-weight: bold; }
+        body {
+            background-color: #f4f6f8;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
 
         .auth-container {
-            max-width: 400px;
-            width: 100%;
-            margin: 50px auto;
-            background: white;
+            background: #ffffff;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
         }
-        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
-        .tab { flex: 1; text-align: center; padding: 10px; cursor: pointer; font-weight: bold; color: #777; }
-        .tab.active { color: #4b2e83; border-bottom: 2px solid #4b2e83; margin-bottom: -2px; }
 
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #2c3e50;
+        }
 
-        .auth-btn { background: #4b2e83; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        .auth-btn:hover { background: #3b2368; }
+        .form-group {
+            margin-bottom: 15px;
+        }
 
-        .profile-card { text-align: center; }
-        .profile-card h3 { margin-bottom: 15px; color: #4b2e83; }
-        .logout-btn { background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 11px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .switch-text {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .switch-text a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .switch-text a:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .back-home {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-home:hover {
+            color: #333;
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <a href="index.html" class="logo">prom<span>.demo</span></a>
-    <a href="index.html" class="home-link">← На главную</a>
-</header>
+<div class="auth-container">
+    <!-- Блок сообщений -->
+    <div id="alertMessage" class="message hidden"></div>
 
-<div class="auth-container" id="authContainer">
-    <!-- Динамический контент (Вход / Регистрация / Код / Кабинет) -->
+    <!-- 1. ФОРМА ВХОДА -->
+    <div id="loginFormSection">
+        <h2>Вход в аккаунт</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" required placeholder="example@gmail.com">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Пароль</label>
+                <input type="password" id="loginPassword" required placeholder="********">
+            </div>
+            <button type="submit">Войти</button>
+        </form>
+        <div class="switch-text">
+            Нет аккаунта? <a href="#" id="showRegister">Зарегистрироваться</a>
+        </div>
+    </div>
+
+    <!-- 2. ФОРМА РЕГИСТРАЦИИ -->
+    <div id="registerFormSection" class="hidden">
+        <h2>Регистрация</h2>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="regEmail">Email</label>
+                <input type="email" id="regEmail" required placeholder="example@gmail.com">
+            </div>
+            <div class="form-group">
+                <label for="regPassword">Пароль</label>
+                <input type="password" id="regPassword" required placeholder="********">
+            </div>
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+        <div class="switch-text">
+            Уже есть аккаунт? <a href="#" id="showLogin">Войти</a>
+        </div>
+    </div>
+
+    <!-- 3. ФОРМА ВВОДА КОДА ПОДТВЕРЖДЕНИЯ -->
+    <div id="verifyFormSection" class="hidden">
+        <h2>Подтверждение Email</h2>
+        <p style="font-size: 13px; color: #666; margin-bottom: 15px; text-align: center;">
+            Мы отправили 6-значный код подтверждения на ваш email. Введите его ниже:
+        </p>
+        <form id="verifyForm">
+            <div class="form-group">
+                <label for="verifyCode">Код подтверждения</label>
+                <input type="text" id="verifyCode" required placeholder="123456" maxlength="6" style="text-align: center; letter-spacing: 5px; font-size: 20px;">
+            </div>
+            <button type="submit">Подтвердить</button>
+        </form>
+    </div>
+
+    <!-- 4. ЛИЧНЫЙ КАБИНЕТ (ЕСЛИ АВТОРИЗОВАН) -->
+    <div id="profileSection" class="hidden">
+        <h2>Личный кабинет</h2>
+        <p style="margin-bottom: 20px; text-align: center;">Вы вошли как: <br><strong id="userEmailDisplay" style="color: #3498db;"></strong></p>
+        <button id="logoutBtn" style="background-color: #e74c3c;">Выйти из аккаунта</button>
+    </div>
+
+    <a href="index.html" class="back-home">← Вернуться на главную</a>
 </div>
 
 <script>
-    const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
-    let isRegisterMode = false;
-    let registeredEmail = '';
-    let waitingForCode = false;
+    // Элементы интерфейса
+    const loginFormSection = document.getElementById('loginFormSection');
+    const registerFormSection = document.getElementById('registerFormSection');
+    const verifyFormSection = document.getElementById('verifyFormSection');
+    const profileSection = document.getElementById('profileSection');
 
-    function renderAuthPage() {
-        const container = document.getElementById('authContainer');
-        const currentUser = localStorage.getItem('currentUser');
+    const showRegisterLink = document.getElementById('showRegister');
+    const showLoginLink = document.getElementById('showLogin');
 
-        if (currentUser) {
-            container.innerHTML = `
-                <div class="profile-card">
-                    <h3>Личный кабинет</h3>
-                    <p style="margin-bottom: 10px; font-size: 15px;">Вы вошли как: <b>${currentUser}</b></p>
-                    <button class="logout-btn" onclick="logout()">Выйти из аккаунта</button>
-                </div>
-            `;
-            return;
-        }
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const verifyForm = document.getElementById('verifyForm');
+    const logoutBtn = document.getElementById('logoutBtn');
 
-        if (waitingForCode) {
-            container.innerHTML = `
-                <h3 style="margin-bottom: 15px; text-align: center;">Введите код из письма</h3>
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px; text-align: center;">Мы отправили код на <b>${registeredEmail}</b></p>
-                <form onsubmit="verifyCode(event)">
-                    <div class="form-group">
-                        <label>Код подтверждения:</label>
-                        <input type="text" id="verificationCode" required placeholder="123456" style="text-align: center; font-size: 18px; letter-spacing: 3px;">
-                    </div>
-                    <button type="submit" class="auth-btn">Подтвердить</button>
-                </form>
-            `;
-            return;
-        }
+    const alertMessage = document.getElementById('alertMessage');
+    const userEmailDisplay = document.getElementById('userEmailDisplay');
 
-        container.innerHTML = `
-            <div class="tabs">
-                <div class="tab active" id="loginTab" onclick="switchTab('login')">Вход</div>
-                <div class="tab" id="registerTab" onclick="switchTab('register')">Регистрация</div>
-            </div>
+    let registeredEmail = ''; // Сохраняем email для этапа проверки кода
 
-            <form id="authForm" onsubmit="handleAuth(event)">
-                <div class="form-group">
-                    <label>Email:</label>
-                    <input type="email" id="email" required placeholder="example@gmail.com">
-                </div>
-                <div class="form-group">
-                    <label>Пароль:</label>
-                    <input type="password" id="password" required placeholder="******">
-                </div>
-                <div class="form-group" id="confirmGroup" style="display: none;">
-                    <label>Подтвердите пароль:</label>
-                    <input type="password" id="confirmPassword" placeholder="******">
-                </div>
-                <button type="submit" class="auth-btn" id="submitBtn">Войти</button>
-            </form>
-        `;
+    // Функция показа уведомлений
+    function showAlert(text, type = 'error') {
+        alertMessage.textContent = text;
+        alertMessage.className = `message ${type}`;
+        alertMessage.classList.remove('hidden');
     }
 
-    function switchTab(tab) {
-        isRegisterMode = (tab === 'register');
-        document.getElementById('loginTab').classList.toggle('active', !isRegisterMode);
-        document.getElementById('registerTab').classList.toggle('active', isRegisterMode);
-        document.getElementById('confirmGroup').style.display = isRegisterMode ? 'block' : 'none';
-        document.getElementById('submitBtn').innerText = isRegisterMode ? 'Зарегистрироваться (получить код)' : 'Войти';
-        document.getElementById('authForm').reset();
+    function hideAlert() {
+        alertMessage.classList.add('hidden');
     }
 
-    async function handleAuth(e) {
+    // Переключение между формами
+    showRegisterLink.addEventListener('click', (e) => {
         e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+        hideAlert();
+        loginFormSection.classList.add('hidden');
+        registerFormSection.classList.remove('hidden');
+    });
 
-        if (isRegisterMode) {
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            if (password !== confirmPassword) {
-                alert('Пароли не совпадают!');
-                return;
-            }
-            registeredEmail = email;
-        }
+    showLoginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        hideAlert();
+        registerFormSection.classList.add('hidden');
+        loginFormSection.classList.remove('hidden');
+    });
 
-        const endpoint = isRegisterMode ? '/api/register' : '/api/login';
+    // Проверка при загрузке страницы: авторизован ли пользователь?
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+        showProfile(JSON.parse(savedUser).email);
+    }
+
+    function showProfile(email) {
+        loginFormSection.classList.add('hidden');
+        registerFormSection.classList.add('hidden');
+        verifyFormSection.classList.add('hidden');
+        profileSection.classList.remove('hidden');
+        userEmailDisplay.textContent = email;
+    }
+
+    // 1. Обработка регистрации
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideAlert();
+
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
 
         try {
-            const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+            const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -143,28 +275,27 @@
             const data = await response.json();
 
             if (response.ok) {
-                alert(data.message);
-                if (isRegisterMode) {
-                    waitingForCode = true;
-                    renderAuthPage();
-                } else {
-                    localStorage.setItem('currentUser', data.user.email);
-                    renderAuthPage();
-                }
+                registeredEmail = email; // Запоминаем email
+                registerFormSection.classList.add('hidden');
+                verifyFormSection.classList.remove('hidden');
+                showAlert(data.message, 'success');
             } else {
-                alert('Ошибка: ' + (data.error || 'Что-то пошло не так'));
+                showAlert(data.error || 'Ошибка регистрации');
             }
         } catch (err) {
-            alert('Ошибка соединения с сервером!');
+            showAlert('Ошибка соединения с сервером');
         }
-    }
+    });
 
-    async function verifyCode(e) {
+    // 2. Обработка проверки кода
+    verifyForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const code = document.getElementById('verificationCode').value;
+        hideAlert();
+
+        const code = document.getElementById('verifyCode').value;
 
         try {
-            const response = await fetch(`${BACKEND_URL}/api/verify`, {
+            const response = await fetch('/api/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: registeredEmail, code })
@@ -173,25 +304,53 @@
             const data = await response.json();
 
             if (response.ok) {
-                alert(data.message);
-                localStorage.setItem('currentUser', data.user.email);
-                waitingForCode = false;
-                renderAuthPage();
+                localStorage.setItem('user', JSON.stringify(data.user));
+                showProfile(data.user.email);
+                showAlert('Аккаунт успешно подтвержден!', 'success');
             } else {
-                alert('Ошибка: ' + (data.error || 'Неверный код'));
+                showAlert(data.error || 'Неверный код');
             }
         } catch (err) {
-            alert('Ошибка соединения с сервером!');
+            showAlert('Ошибка соединения с сервером');
         }
-    }
+    });
 
-    function logout() {
-        localStorage.removeItem('currentUser');
-        renderAuthPage();
-    }
+    // 3. Обработка входа
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideAlert();
 
-    renderAuthPage();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                showProfile(data.user.email);
+            } else {
+                showAlert(data.error || 'Неверный email или пароль');
+            }
+        } catch (err) {
+            showAlert('Ошибка соединения с сервером');
+        }
+    });
+
+    // Выход из аккаунта
+    logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('user');
+        profileSection.classList.add('hidden');
+        loginFormSection.classList.remove('hidden');
+        document.getElementById('loginForm').reset();
+        hideAlert();
+    });
 </script>
-
 </body>
 </html>
