@@ -80,7 +80,8 @@
     const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
     let savedPassword = '';
 
-    function login() {
+    // Асинхронная проверка пароля через сервер
+    async function login() {
         const passwordInput = document.getElementById('adminPassword').value;
         const authMessage = document.getElementById('authMessage');
 
@@ -89,12 +90,30 @@
             return;
         }
 
-        savedPassword = passwordInput;
-        document.getElementById('authBlock').classList.add('hidden');
-        document.getElementById('adminPanel').classList.remove('hidden');
+        authMessage.innerHTML = '<div class="alert">Проверка пароля...</div>';
 
-        // Загружаем список товаров для удаления сразу после входа
-        loadAdminProducts();
+        try {
+            // Отправляем запрос на сервер для проверки пароля
+            const response = await fetch(`${BACKEND_URL}/api/admin/login`, {
+                method: 'POST',
+                headers: {
+                    'x-admin-password': passwordInput
+                }
+            });
+
+            if (response.ok) {
+                // Если пароль верный — открываем админку
+                savedPassword = passwordInput;
+                document.getElementById('authBlock').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden');
+                loadAdminProducts();
+            } else {
+                // Если пароль неверный
+                authMessage.innerHTML = '<div class="alert alert-error">Неверный пароль администратора!</div>';
+            }
+        } catch (error) {
+            authMessage.innerHTML = '<div class="alert alert-error">Ошибка соединения с сервером!</div>';
+        }
     }
 
     // Загрузка товаров в панель администратора
@@ -134,7 +153,7 @@
 
             if (res.ok) {
                 alert('Товар успешно удален!');
-                loadAdminProducts(); // Обновляем список
+                loadAdminProducts();
             } else {
                 const err = await res.json();
                 alert('Ошибка: ' + (err.error || 'Не удалось удалить товар'));
@@ -171,7 +190,7 @@
             if (response.ok) {
                 statusMessage.innerHTML = '<div class="alert alert-success">Товар успешно добавлен!</div>';
                 document.getElementById('addProductForm').reset();
-                loadAdminProducts(); // Обновляем список товаров на странице админки
+                loadAdminProducts();
             } else {
                 const err = await response.json();
                 statusMessage.innerHTML = `<div class="alert alert-error">Ошибка: ${err.error || err.message || 'Не удалось добавить товар'}</div>`;

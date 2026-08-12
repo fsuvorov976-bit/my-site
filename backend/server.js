@@ -51,6 +51,11 @@ app.get('/api/catalog', (req, res) => {
     res.json(catalog);
 });
 
+// POST: Проверка пароля администратора (для входа в админку)
+app.post('/api/admin/login', checkAdminAuth, (req, res) => {
+    res.json({ success: true, message: 'Авторизация успешна!' });
+});
+
 // POST: Добавить товар (ЗАЩИЩЕНО ПАРОЛЕМ!)
 app.post('/api/products', checkAdminAuth, (req, res) => {
     const { name, price, image, description } = req.body;
