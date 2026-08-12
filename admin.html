@@ -15,7 +15,7 @@
         input:focus, textarea:focus { border-color: #007bff; outline: none; }
         button { width: 100%; background: #007bff; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button:hover { background: #0056b3; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         .alert { padding: 10px; border-radius: 6px; margin-bottom: 15px; text-align: center; font-size: 14px; }
         .alert-error { background: #f8d7da; color: #721c24; }
         .alert-success { background: #d4edda; color: #155724; }
@@ -39,11 +39,11 @@
             <label for="adminPassword">Пароль администратора:</label>
             <input type="password" id="adminPassword" placeholder="Введите пароль">
         </div>
-        <button onclick="login()">Войти</button>
+        <button type="button" onclick="login()">Войти</button>
         <a href="index.html" class="back-link">← Вернуться на сайт</a>
     </div>
 
-    <!-- Панель управления товарами -->
+    <!-- Панель управления товарами (скрыта по умолчанию!) -->
     <div id="adminPanel" class="hidden">
         <h1>Добавить новый товар</h1>
         <div id="statusMessage"></div>
@@ -80,7 +80,7 @@
     const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
     let savedPassword = '';
 
-    // Асинхронная проверка пароля через сервер
+    // Строгая проверка пароля через сервер
     async function login() {
         const passwordInput = document.getElementById('adminPassword').value;
         const authMessage = document.getElementById('authMessage');
@@ -101,15 +101,17 @@
                 }
             });
 
+            // Если сервер вернул успех (статус 200)
             if (response.ok) {
-                // Если пароль верный — открываем админку
                 savedPassword = passwordInput;
+                // Скрываем блок авторизации и показываем панель
                 document.getElementById('authBlock').classList.add('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
                 loadAdminProducts();
             } else {
-                // Если пароль неверный
-                authMessage.innerHTML = '<div class="alert alert-error">Неверный пароль администратора!</div>';
+                // Если пароль неверный (статус 401)
+                authMessage.innerHTML = '<div class="alert alert-error">Неверный пароль администратора! Доступ запрещен.</div>';
+                document.getElementById('adminPanel').classList.add('hidden');
             }
         } catch (error) {
             authMessage.innerHTML = '<div class="alert alert-error">Ошибка соединения с сервером!</div>';
