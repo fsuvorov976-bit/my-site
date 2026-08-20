@@ -824,7 +824,7 @@
 
         let optionsHtml = '';
         filtered.forEach(wh => {
-            optionsHtml += `<option value="${wh.Number}">${wh.Description}</option>`;
+            optionsHtml += `<option value="${wh.Description}">${wh.Description}</option>`;
         });
         selectElem.innerHTML = optionsHtml || '<option value="">Нічого не знайдено</option>';
     }
@@ -845,7 +845,25 @@
             return;
         }
 
-        const deliveryType = document.getElementById('npRadio').checked ? 'Нова Пошта' : 'Самовивіз';
+        const isNp = document.getElementById('npRadio').checked;
+        const deliveryType = isNp ? 'Нова Пошта' : 'Самовивіз';
+
+        let deliveryDetails = 'Самовивіз з магазину';
+        if (isNp) {
+            const cityName = document.getElementById('npCityInput').value.trim() || 'Не вказано';
+            const subtype = document.querySelector('input[name="np_sub"]:checked').value;
+
+            if (subtype === 'courier') {
+                const street = document.getElementById('courierStreet') ? document.getElementById('courierStreet').value.trim() : '';
+                const building = document.getElementById('courierBuilding') ? document.getElementById('courierBuilding').value.trim() : '';
+                deliveryDetails = `Кур'єр (${cityName}, вул. ${street}, буд. ${building})`;
+            } else {
+                const selectElem = document.getElementById('npTargetSelect');
+                const warehouseName = selectElem && selectElem.options[selectElem.selectedIndex] ? selectElem.options[selectElem.selectedIndex].text : 'Відділення не вибрано';
+                const subName = subtype === 'postomat' ? 'Поштомат' : 'Відділення';
+                deliveryDetails = `${subName} — м. ${cityName}, ${warehouseName}`;
+            }
+        }
 
         const activePaymentCard = document.querySelector('#checkoutOverlay .checkout-step:nth-last-child(1) .option-card.active-option-card');
         const paymentType = activePaymentCard ? activePaymentCard.querySelector('strong').innerText : 'Не вказано';
@@ -859,6 +877,7 @@
             cart,
             total,
             delivery: deliveryType,
+            deliveryDetails,
             payment: paymentType
         };
 
