@@ -631,6 +631,12 @@
         openCart();
     }
 
+    // Функція видалення конкретного товару з кошика за його індексом
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        updateCartUI();
+    }
+
     function updateCartUI() {
         document.getElementById('cartBtn').innerText = `🛒 Кошик (${cart.length})`;
         const container = document.getElementById('cartItemsContainer');
@@ -640,11 +646,14 @@
             return;
         }
         let html = '', total = 0;
-        cart.forEach(item => {
+        cart.forEach((item, index) => {
             total += item.price;
             html += `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; font-size: 13px;">
-                <span style="max-width: 250px;">${item.title}</span>
-                <span style="font-weight: bold; color: #b12704;">${item.price} ₴</span>
+                <span style="max-width: 230px;">${item.title}</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-weight: bold; color: #b12704; white-space: nowrap;">${item.price} ₴</span>
+                    <button onclick="removeFromCart(${index})" style="background: none; border: none; color: #c62828; cursor: pointer; font-size: 16px; font-weight: bold;" title="Видалити товар">✕</button>
+                </div>
             </div>`;
         });
         container.innerHTML = html;
