@@ -2,37 +2,226 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Alter-shop Clone</title>
+    <title>Авторизований сервіс - Alter-shop</title>
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
-        header { background: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; }
-        .container { display: flex; padding: 20px; }
-        aside { width: 250px; background: #fff; padding: 15px; margin-right: 20px; }
-        main { flex-grow: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-        .product-card { background: #fff; padding: 15px; border: 1px solid #ddd; text-align: center; }
-        .buy-btn { background: #ff9900; color: white; border: none; padding: 10px; cursor: pointer; width: 100%; margin-top: 10px; }
-        .hidden { display: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background-color: #f4f4f4; color: #333; }
+
+        /* Верхня сіра панель */
+        .top-bar {
+            background-color: #333;
+            color: #fff;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 40px;
+        }
+        .top-bar a { color: #fff; text-decoration: none; margin-left: 15px; }
+
+        /* Шапка сайту */
+        .header {
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 40px;
+            border-bottom: 1px solid #ddd;
+        }
+        .logo-area { display: flex; align-items: center; gap: 15px; }
+        .logo-text { font-weight: bold; font-size: 20px; color: #004080; }
+        .logo-sub { font-size: 12px; color: #666; max-width: 120px; }
+
+        .search-box {
+            display: flex;
+            flex: 0 0 45%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            outline: none;
+        }
+        .search-box button {
+            background-color: #003366;
+            color: white;
+            border: none;
+            padding: 0 20px;
+            cursor: pointer;
+        }
+
+        .cart-btn {
+            background-color: #0099ff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* Навігаційне меню (синє) */
+        .nav-menu {
+            background-color: #003366;
+            display: flex;
+            padding: 0 40px;
+        }
+        .nav-menu a {
+            color: white;
+            padding: 12px 20px;
+            text-decoration: none;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .nav-menu a:hover, .nav-menu a.active {
+            background-color: #002244;
+        }
+
+        /* Основний контент */
+        .main-container {
+            display: flex;
+            padding: 20px 40px;
+            gap: 20px;
+        }
+
+        /* Сайдбар фільтрів */
+        aside {
+            width: 260px;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+        aside h3 {
+            background-color: #003366;
+            color: white;
+            padding: 10px;
+            margin: -20px -20px 15px -20px;
+            font-size: 15px;
+            text-transform: uppercase;
+        }
+        .filter-group { margin-bottom: 20px; }
+        .filter-group h4 { font-size: 14px; margin-bottom: 8px; }
+        .price-inputs { display: flex; gap: 10px; align-items: center; }
+        .price-inputs input { width: 45%; padding: 6px; border: 1px solid #ccc; }
+        .checkbox-label { display: block; font-size: 13px; margin-bottom: 6px; cursor: pointer; }
+
+        /* Каталог / Банер */
+        .content-area { flex-grow: 1; }
+        .banner {
+            background: linear-gradient(135deg, #ddd 0%, #fff 100%);
+            border: 1px solid #ccc;
+            padding: 40px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #003366;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        /* Сітка карток товарів */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        .product-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .product-card img { width: 100%; height: 150px; object-fit: contain; margin-bottom: 10px; }
+        .product-title { font-size: 14px; margin-bottom: 10px; text-align: left; }
+        .product-status { color: #008000; font-size: 12px; text-align: left; margin-bottom: 5px; }
+        .product-price { font-size: 18px; font-weight: bold; color: #b12704; text-align: left; margin-bottom: 10px; }
+        .buy-btn {
+            background-color: #ffa41c;
+            border: 1px solid #ff8f00;
+            padding: 8px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .buy-btn:hover { background-color: #fa8900; }
     </style>
 </head>
 <body>
-<header>
-    <div><strong>Alter-shop Clone</strong></div>
-    <input type="text" placeholder="Пошук товарів...">
-    <div><a href="account.html">Кабінет</a> | <a href="#">Кошик</a></div>
-</header>
-<div class="container">
-    <aside>
-        <h3>Каталог</h3>
-        <ul>
-            <li>Kludi</li>
-            <li>PAFFONI</li>
-            <li>NOBILI</li>
-        </ul>
-    </aside>
-    <main id="product-list">
-        <!-- Product cards will be injected here -->
-    </main>
+
+<!-- Верхня панель -->
+<div class="top-bar">
+    <div>UA | RU &nbsp;&nbsp;&nbsp; 📞 +380 (50) 598-85-63</div>
+    <div>
+        <a href="account.html">Кабінет</a>
+        <a href="#">Кошик</a>
+    </div>
 </div>
+
+<!-- Шапка сайту -->
+<header class="header">
+    <div class="logo-area">
+        <div class="logo-text">ALTER SHOP</div>
+        <div class="logo-sub">Авторизований сервіс</div>
+    </div>
+    <div class="search-box">
+        <input type="text" placeholder="Пошук...">
+        <button>🔍</button>
+    </div>
+    <a href="#" class="cart-btn">🛒 Кошик</a>
+</header>
+
+<!-- Головне меню -->
+<nav class="nav-menu">
+    <a href="#">Головна</a>
+    <a href="#" class="active">Товари та послуги</a>
+    <a href="#">Про нас</a>
+    <a href="#">Контакти</a>
+    <a href="#">Доставка та оплата</a>
+</nav>
+
+<!-- Контент з фільтрами -->
+<div class="main-container">
+    <!-- Фільтри зліва -->
+    <aside>
+        <h3>Фільтри</h3>
+        <div class="filter-group">
+            <h4>Ціна</h4>
+            <div class="price-inputs">
+                <input type="text" placeholder="від 1">
+                <span>-</span>
+                <input type="text" placeholder="до 30255">
+            </div>
+        </div>
+        <div class="filter-group">
+            <h4>Наявність</h4>
+            <label class="checkbox-label"><input type="checkbox" checked> В наявності (1260)</label>
+        </div>
+        <div class="filter-group">
+            <h4>Тип запчастин</h4>
+            <label class="checkbox-label"><input type="checkbox"> Аератори (27)</label>
+            <label class="checkbox-label"><input type="checkbox"> Картриджі для змішувачів (116)</label>
+            <label class="checkbox-label"><input type="checkbox"> Гігієнічні душі (45)</label>
+            <label class="checkbox-label"><input type="checkbox"> Кран-букси (32)</label>
+        </div>
+    </aside>
+
+    <!-- Каталог товарів справа -->
+    <div class="content-area">
+        <div class="banner">
+            ЛУЧШИЙ ВЫБОР ЗАПЧАСТЕЙ К СМЕСИТЕЛЯМ
+        </div>
+
+        <div class="product-grid" id="product-list">
+            <!-- Картки товарів генеруються автоматично через catalog.js або напряму -->
+        </div>
+    </div>
+</div>
+
 <script src="js/catalog.js"></script>
 </body>
 </html>

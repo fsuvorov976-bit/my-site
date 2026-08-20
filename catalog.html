@@ -1,8 +1,24 @@
 const products = [
-{ name: "Змішувач Kludi", price: "1200 ₴" },
-{ name: "Картридж Geberit", price: "500 ₴" }
+{ name: "Засіб для видалення вапняного нальоту GEBERIT", price: "582 ₴", status: "В наявності" },
+{ name: "Картридж керамічний Ø 46 мм Dornbracht", price: "5 880 ₴", status: "В наявності" },
+{ name: "Кран-букса керамічна Blanco FONTAS-S", price: "1 895 ₴", status: "В наявності" },
+{ name: "Зливний механізм A2 для інсталяції TECE", price: "2 990 ₴", status: "В наявності" }
 ];
+
 const container = document.getElementById('product-list');
+
 products.forEach(p => {
-container.innerHTML += `<div class="product-card"><h4>${p.name}</h4><p>${p.price}</p><button class="buy-btn">Купити</button></div>`;
+container.innerHTML += `
+<div class="product-card">
+    <div>
+        <div style="background:#eee; height:130px; display:flex; align-items:center; justify-content:center; color:#88; margin-bottom:10px;">Фото товару</div>
+        <div class="product-status">✔ ${p.status}</div>
+        <div class="product-title">${p.name}</div>
+    </div>
+    <div>
+        <div class="product-price">${p.price}</div>
+        <button class="buy-btn">Купити</button>
+    </div>
+</div>
+`;
 });
