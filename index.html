@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Авторизований сервіс - Nikita-shop</title>
+    <title>Авторизований сервіс - NIKITA-shop</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
@@ -83,7 +83,6 @@
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
         .product-card { background: #fff; border: 1px solid #ddd; padding: 15px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
 
-        /* Стилі для фото товару */
         .product-img-container { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; background: #f9f9f9; border-radius: 4px; overflow: hidden; }
         .product-img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
@@ -134,13 +133,13 @@
 <body>
 
 <div class="top-bar">
-    <div>UA &nbsp;&nbsp;&nbsp; 📞 +380 (50) 888 88 88</div>
+    <div>UA | RU &nbsp;&nbsp;&nbsp; 📞 +380 (50) 598-85-63</div>
     <div class="cabinet-wrapper"><a href="#" class="hidden-cabinet" onclick="openLoginModal(event)">Кабінет</a></div>
 </div>
 
 <header class="header">
     <div class="logo-area">
-        <div class="logo-text">Nikita SHOP</div>
+        <div class="logo-text">NIKITA SHOP</div>
         <div class="logo-sub">Авторизований сервіс</div>
     </div>
     <div class="search-box">
@@ -413,7 +412,7 @@
             });
     }
 
-    // Завантаження Excel із витягуванням фото
+    // Завантаження Excel з точним пошуком колонки `Ссылка_изображения`
     function handleExcelUpload() {
         const fileInput = document.getElementById('excelFile');
         if (fileInput.files.length === 0) { alert('Оберіть Excel-файл!'); return; }
@@ -433,23 +432,22 @@
             productGrid.innerHTML = '';
 
             jsonRows.forEach(row => {
-                // Шукаємо назву (підтримуємо різні варіанти назв колонок у Prom.ua)
                 const title = row['Название_позиции'] || row['Название_позиции_укр'] || row['Назва'] || row['Title'] || 'Без назви';
-                // Шукаємо ціну
                 const price = row['Цена'] || row['Цена_от'] || row['Ціна'] || row['Price'] || 0;
-                // Шукаємо посилання на зображення (Prom.ua використовує 'Изображение', 'Фото', 'Image' тощо)
-                const imgUrl = row['Изображение'] || row['Фото'] || row['Image'] || row['Посилання на фото'] || '';
 
-                // Формуємо блок картинки (якщо посилання є — виводимо тег img, якщо ні — заглушку)
+                // Прямий пошук колонки з посиланням на зображення у форматі Prom.ua
+                const imgUrl = row['Ссылка_изображения'] || row['Изображение'] || row['Фото'] || row['Image'] || '';
+
                 let imgHtml = `<div class="product-img-container"><span style="color: #aaa; font-size: 12px;">Без фото</span></div>`;
                 if (imgUrl) {
-                    // Якщо в колонці через кому вказано кілька фото, беремо перше до коми
+                    // Беремо перше посилання, якщо їх кілька через кому, та видаляємо зайві пробіли
                     let firstImg = imgUrl.toString().split(',')[0].trim();
-                    imgHtml = `<div class="product-img-container"><img src="${firstImg}" alt="${title}" class="product-img" onerror="this.parentElement.innerHTML='<span style=\\'color:#aaa;font-size:12px;\\'>Помилка завантаження фото</span>'"></div>`;
+                    imgHtml = `<div class="product-img-container"><img src="${firstImg}" alt="${title}" class="product-img" onerror="this.parentElement.innerHTML='<span style=\\'color:#aaa;font-size:12px;\\'>Помилка завантаження</span>'"></div>`;
                 }
 
                 const card = document.createElement('div');
                 card.className = 'product-card';
+                card.htmlEscape = false;
                 card.innerHTML = `
                         ${imgHtml}
                         <div class="product-title">${title}</div>
