@@ -97,7 +97,6 @@
         .in-stock { background: #e8f5e9; color: #2e7d32; }
         .out-of-stock { background: #ffebee; color: #c62828; }
 
-        /* Стилі для пакетного режиму адміна */
         .admin-panel { display: none; background: #e3f2fd; border: 2px dashed #0099ff; padding: 20px; margin-bottom: 25px; border-radius: 6px; }
         .batch-checkbox { display: none; position: absolute; top: 10px; left: 10px; width: 20px; height: 20px; cursor: pointer; z-index: 10; }
 
@@ -177,7 +176,6 @@
 
         <div class="content-area">
 
-            <!-- ПАКЕТНА АДМІН-ПАНЕЛЬ -->
             <div class="admin-panel" id="adminPanel">
                 <h3 style="color: #0d47a1; margin-bottom: 10px;">👑 Панель адміністратора (Пакетне керування)</h3>
                 <p style="font-size: 13px; margin-bottom: 10px;">Позначте галочками товари в сітці нижче та змініть їхній статус кількома кліками:</p>
@@ -254,7 +252,7 @@
                 let savedStock = JSON.parse(localStorage.getItem('products_stock_state') || '{}');
 
                 allProducts = products.map((item, idx) => {
-                    let defaultInStock = true; // За замовчуванням усі в наявності
+                    let defaultInStock = true;
                     if (item.Naаlihie === '-' || item.Наличие === '-') {
                         defaultInStock = false;
                     }
@@ -317,7 +315,6 @@
                 ? `<div class="stock-badge in-stock">✓ В наявності</div>`
                 : `<div class="stock-badge out-of-stock">✕ Немає в наявності</div>`;
 
-            // Чекбокс для пакетного вибору товару в режимі адміна
             let batchCheckboxHtml = '';
             if (isAdminLoggedIn) {
                 batchCheckboxHtml = `<input type="checkbox" class="batch-checkbox" data-title="${item.title.replace(/"/g, '&quot;')}" style="display: block;">`;
@@ -367,7 +364,6 @@
         renderProducts(filtered);
     }
 
-    // Пакетні функції для адміна
     function selectAllVisible() {
         document.querySelectorAll('.batch-checkbox').forEach(cb => cb.checked = true);
     }
@@ -475,7 +471,7 @@
                 `;
         });
         container.innerHTML = html;
-        document.getElementById('cartTotalPrice': total + ' ₴'); // corrected inline reference below
+        document.getElementById('cartTotalPrice').innerText = total + ' ₴';
     }
 
     function openCart() { document.getElementById('cartOverlay').style.display = 'flex'; }
