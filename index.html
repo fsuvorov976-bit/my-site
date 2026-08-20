@@ -1,318 +1,38 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Маркетплейс — Prom.ua</title>
+    <title>Alter-shop Clone</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f2f4f7; color: #333; }
-
-        /* Шапка */
-        header { background: #4b2e83; padding: 15px 5%; color: white; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-        .header-left { display: flex; align-items: center; gap: 15px; }
-        .menu-toggle { background: none; border: none; color: white; font-size: 24px; cursor: pointer; display: flex; flex-direction: column; gap: 5px; }
-        .menu-toggle span { display: block; width: 25px; height: 3px; background: white; border-radius: 2px; }
-
-        .logo { font-size: 24px; font-weight: bold; color: #fff; text-decoration: none; }
-        .logo span { color: #ffcc00; }
-        .user-menu { display: flex; gap: 15px; align-items: center; }
-        .cart-btn { background: #ff5722; color: white; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; border: none; }
-
-        /* Боковое меню (выезжающая шторка) */
-        .sidebar-menu {
-            position: fixed;
-            top: 0; left: -280px; width: 280px; height: 100%;
-            background: white;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.2);
-            z-index: 1100;
-            transition: left 0.3s ease;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .sidebar-menu.open {
-            left: 0;
-        }
-        .sidebar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .sidebar-links {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .sidebar-links a {
-            color: #333;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 16px;
-            padding: 8px 10px;
-            border-radius: 6px;
-            transition: background 0.2s;
-        }
-        .sidebar-links a:hover {
-            background: #f2f4f7;
-            color: #4b2e83;
-        }
-
-        /* Затемнение фона при открытом меню */
-        .backdrop {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4);
-            display: none;
-            z-index: 1050;
-        }
-        .backdrop.open {
-            display: block;
-        }
-
-        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
-
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
-        .card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between; }
-        .card img { width: 100%; height: 150px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; }
-        .product-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
-        .price { font-size: 18px; font-weight: bold; color: #111; margin-bottom: 12px; }
-        .buy-btn { background: #ff5722; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
-
-        /* Всплывающее окно корзины */
-        .cart-modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1200;
-        }
-        .cart-modal-overlay.open { display: flex; }
-        .cart-modal {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            width: 100%;
-            max-width: 450px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; font-size: 14px; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-        .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        .checkout-btn { background: #28a745; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+        header { background: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; }
+        .container { display: flex; padding: 20px; }
+        aside { width: 250px; background: #fff; padding: 15px; margin-right: 20px; }
+        main { flex-grow: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .product-card { background: #fff; padding: 15px; border: 1px solid #ddd; text-align: center; }
+        .buy-btn { background: #ff9900; color: white; border: none; padding: 10px; cursor: pointer; width: 100%; margin-top: 10px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-
-<!-- Затемнение фона -->
-<div class="backdrop" id="backdrop" onclick="toggleSidebar()"></div>
-
-<!-- Боковое меню с тремя полосками -->
-<div class="sidebar-menu" id="sidebarMenu">
-    <div class="sidebar-header">
-        <span>Меню</span>
-        <button onclick="toggleSidebar()" style="background:none; border:none; font-size:20px; cursor:pointer;">✕</button>
-    </div>
-    <div class="sidebar-links">
-        <a href="index.html">🏠 Главная (Каталог)</a>
-        <a href="account.html" onclick="...">👤 Аккаунт</a>
-        <a href="#" onclick="alert('Интернет-магазин на базе Prom Demo — лучший выбор для вашего бизнеса!'); toggleSidebar();">ℹ️ Информация о нас</a>
-        <a href="#" onclick="alert('Свяжитесь с нами: support@prom.demo | Телефон: +380000000000'); toggleSidebar();">📞 Свяжитесь с нами</a>
-        <a href="admin.html">⚙️ Админка</a>
-    </div>
-</div>
-
 <header>
-    <div class="header-left">
-        <!-- Кнопка с тремя полосками -->
-        <button class="menu-toggle" onclick="toggleSidebar()">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-        <a href="index.html" class="logo">prom<span>.demo</span></a>
-    </div>
-    <div class="user-menu">
-        <button class="cart-btn" onclick="toggleCart()">🛒 Корзина (<span id="cart-count">0</span>)</button>
-    </div>
+    <div><strong>Alter-shop Clone</strong></div>
+    <input type="text" placeholder="Пошук товарів...">
+    <div><a href="account.html">Кабінет</a> | <a href="#">Кошик</a></div>
 </header>
-
 <div class="container">
-    <main>
-        <h2 style="margin-bottom: 15px;">Каталог товаров</h2>
-        <div id="catalog" class="grid">Загрузка...</div>
+    <aside>
+        <h3>Каталог</h3>
+        <ul>
+            <li>Kludi</li>
+            <li>PAFFONI</li>
+            <li>NOBILI</li>
+        </ul>
+    </aside>
+    <main id="product-list">
+        <!-- Product cards will be injected here -->
     </main>
 </div>
-
-<!-- Всплывающее окно корзины -->
-<div class="cart-modal-overlay" id="cartModal">
-    <div class="cart-modal">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin: 0;">Ваша корзина</h3>
-            <button onclick="toggleCart()" style="background: none; border: none; font-size: 20px; cursor: pointer; font-weight: bold;">✕</button>
-        </div>
-
-        <div id="cart-items" style="margin: 15px 0; max-height: 180px; overflow-y: auto;">
-            <p style="color: #777; font-size: 14px;">Корзина пуста</p>
-        </div>
-        <div style="font-weight: bold; margin-bottom: 15px;">Итого: <span id="cart-total">0</span> ₴</div>
-
-        <h3 style="margin-bottom: 10px;">Оформление заказа</h3>
-        <form id="orderForm" onsubmit="checkout(event)">
-            <div class="form-group">
-                <label>Имя:</label>
-                <input type="text" id="name" required placeholder="Иван">
-            </div>
-            <div class="form-group">
-                <label>Фамилия:</label>
-                <input type="text" id="surname" required placeholder="Иванов">
-            </div>
-            <div class="form-group">
-                <label>Адрес доставки (Город, отделение Новой Почты):</label>
-                <input type="text" id="address" required placeholder="Киев, отд. №5">
-            </div>
-            <div class="form-group">
-                <label>Телефон:</label>
-                <input type="tel" id="phone" required placeholder="+380...">
-            </div>
-            <button type="submit" class="checkout-btn">Подтвердить заказ</button>
-        </form>
-    </div>
-</div>
-
-<script>
-    const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
-    let cart = [];
-    let productsList = [];
-
-    // Открытие/закрытие бокового меню
-    function toggleSidebar() {
-        document.getElementById('sidebarMenu').classList.toggle('open');
-        document.getElementById('backdrop').classList.toggle('open');
-    }
-
-    async function loadCatalog() {
-        try {
-            const res = await fetch(`${BACKEND_URL}/api/catalog`);
-            productsList = await res.json();
-            const container = document.getElementById('catalog');
-
-            if (productsList.length === 0) {
-                container.innerHTML = '<p>Товаров нет</p>';
-                return;
-            }
-
-            container.innerHTML = productsList.map(item => `
-                <div class="card">
-                    <div>
-                        ${item.image ? `<img src="${item.image}">` : '<div style="height:150px; background:#eee; display:flex; align-items:center; justify-content:center; border-radius:6px;">📦</div>'}
-                        <div class="product-title">${item.name}</div>
-                    </div>
-                    <div>
-                        <div class="price">${item.price} ₴</div>
-                        <button class="buy-btn" onclick="addToCart(${item.id})">В корзину</button>
-                    </div>
-                </div>
-            `).join('');
-        } catch (e) {
-            document.getElementById('catalog').innerHTML = '<p style="color:red;">Ошибка загрузки сервера</p>';
-        }
-    }
-
-    function toggleCart() {
-        const modal = document.getElementById('cartModal');
-        modal.classList.toggle('open');
-    }
-
-    function addToCart(id) {
-        const product = productsList.find(p => p.id === id);
-        if (product) {
-            cart.push(product);
-            updateCartUI();
-            toggleCart();
-        }
-    }
-
-    function removeFromCart(index) {
-        cart.splice(index, 1);
-        updateCartUI();
-    }
-
-    function updateCartUI() {
-        const cartContainer = document.getElementById('cart-items');
-        const totalContainer = document.getElementById('cart-total');
-        const cartCount = document.getElementById('cart-count');
-
-        cartCount.innerText = cart.length;
-
-        if (cart.length === 0) {
-            cartContainer.innerHTML = '<p style="color: #777; font-size: 14px;">Корзина пуста</p>';
-            totalContainer.innerText = '0';
-            return;
-        }
-
-        let total = 0;
-        cartContainer.innerHTML = cart.map((item, index) => {
-            total += item.price;
-            return `
-                <div class="cart-item">
-                    <span>${item.name} — <b>${item.price} ₴</b></span>
-                    <button onclick="removeFromCart(${index})" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 12px;">✕</button>
-                </div>
-            `;
-        }).join('');
-        totalContainer.innerText = total;
-    }
-
-    async function checkout(e) {
-        e.preventDefault();
-        if (cart.length === 0) {
-            alert('Ваша корзина пуста!');
-            return;
-        }
-
-        const orderData = {
-            name: document.getElementById('name').value,
-            surname: document.getElementById('surname').value,
-            address: document.getElementById('address').value,
-            phone: document.getElementById('phone').value,
-            cart: cart
-        };
-
-        try {
-            const response = await fetch(`${BACKEND_URL}/api/order`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(orderData)
-            });
-
-            if (response.ok) {
-                alert('Спасибо за заказ! Заказ успешно отправлен менеджеру.');
-                cart = [];
-                updateCartUI();
-                document.getElementById('orderForm').reset();
-                toggleCart();
-            } else {
-                const err = await response.json();
-                alert('Ошибка: ' + (err.error || 'Не удалось отправить заказ'));
-            }
-        } catch (error) {
-            alert('Ошибка сети или сервер недоступен!');
-        }
-    }
-
-    loadCatalog();
-</script>
-
+<script src="js/catalog.js"></script>
 </body>
 </html>
