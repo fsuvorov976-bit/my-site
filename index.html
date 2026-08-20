@@ -7,7 +7,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: #f7f9fa; color: #333; }
 
-        /* Верхня тонка панель */
         .top-bar {
             background-color: #002244; color: #fff; font-size: 13px;
             display: flex; justify-content: space-between; padding: 8px 40px; align-items: center;
@@ -16,7 +15,6 @@
         .cabinet-wrapper:hover { opacity: 1; }
         .top-bar a.hidden-cabinet { color: #fff; text-decoration: none; }
 
-        /* Шапка сайту */
         .header {
             background-color: #fff; display: flex; align-items: center;
             justify-content: space-between; padding: 15px 40px; border-bottom: 1px solid #e1e4e8;
@@ -38,16 +36,13 @@
         }
         .cart-btn:hover { background-color: #007acc; }
 
-        /* Навігаційне меню */
         .nav-menu { background-color: #003366; display: flex; padding: 0 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .nav-menu a { color: white; padding: 12px 20px; text-decoration: none; font-size: 13px; font-weight: 600; text-transform: uppercase; cursor: pointer; letter-spacing: 0.5px; }
         .nav-menu a:hover, .nav-menu a.active { background-color: #002244; }
 
-        /* Основний макет */
         .page-section { display: none; padding: 25px 40px; }
         .page-section.active-section { display: flex; gap: 25px; }
 
-        /* Сайдбар з фільтрами */
         aside { width: 280px; background: #fff; padding: 20px; border: 1px solid #e1e4e8; height: fit-content; border-radius: 4px; }
         aside h3 { background-color: #003366; color: white; padding: 10px 15px; margin: -20px -20px 15px -20px; font-size: 14px; text-transform: uppercase; border-radius: 4px 4px 0 0; }
 
@@ -58,7 +53,6 @@
 
         .content-area { flex-grow: 1; }
 
-        /* Стильний банер */
         .banner {
             background: linear-gradient(135deg, #002244 0%, #004080 100%);
             color: white; padding: 30px; text-align: center; font-size: 22px; font-weight: bold;
@@ -66,7 +60,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* ПЛАШКИ ПРОИЗВОДИТЕЛЕЙ (Бренди у вигляді кнопок-плиток зверху) */
         .top-brands-showcase {
             background: #fff; border: 1px solid #e1e4e8; padding: 20px; border-radius: 6px; margin-bottom: 25px;
         }
@@ -84,7 +77,6 @@
             background: #003366; color: white; border-color: #003366; transform: translateY(-2px);
         }
 
-        /* Сітка товарів */
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
         .product-card {
             background: #fff; border: 1px solid #e1e4e8; padding: 15px; text-align: center;
@@ -101,16 +93,14 @@
         .buy-btn { background-color: #ffa41c; border: 1px solid #ff8f00; padding: 10px; width: 100%; font-weight: bold; cursor: pointer; border-radius: 4px; transition: background 0.2s; }
         .buy-btn:hover { background-color: #fa9500; }
 
-        /* Бейдж наявності */
         .stock-badge { font-size: 11px; padding: 3px 8px; border-radius: 3px; font-weight: bold; margin-bottom: 8px; display: inline-block; text-align: left; }
         .in-stock { background: #e8f5e9; color: #2e7d32; }
         .out-of-stock { background: #ffebee; color: #c62828; }
 
-        /* Адмін панель */
-        .admin-stock-control { display: none; margin-top: 8px; font-size: 12px; background: #e3f2fd; padding: 5px; border-radius: 4px; }
+        /* Стилі для пакетного режиму адміна */
         .admin-panel { display: none; background: #e3f2fd; border: 2px dashed #0099ff; padding: 20px; margin-bottom: 25px; border-radius: 6px; }
+        .batch-checkbox { display: none; position: absolute; top: 10px; left: 10px; width: 20px; height: 20px; cursor: pointer; z-index: 10; }
 
-        /* Модальні вікна */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
@@ -152,11 +142,9 @@
     <a class="active" onclick="switchTab('catalog', event)">Товари та послуги</a>
 </nav>
 
-<!-- КАТАЛОГ -->
 <div id="catalog" class="page-section active-section" style="flex-direction: column;">
     <div style="display: flex; gap: 25px; width: 100%;">
 
-        <!-- Сайдбар фільтрів -->
         <aside>
             <h3>Фільтри</h3>
 
@@ -187,33 +175,39 @@
             </div>
         </aside>
 
-        <!-- Основний контент -->
         <div class="content-area">
 
+            <!-- ПАКЕТНА АДМІН-ПАНЕЛЬ -->
             <div class="admin-panel" id="adminPanel">
-                <h3 style="color: #0d47a1; margin-bottom: 10px;">👑 Панель адміністратора</h3>
-                <p style="font-size: 13px; margin-bottom: 10px;">Завантажте Excel-файл. Наявність товарів можна міняти тумблерами прямо на картках нижче.</p>
-                <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 10px; background: white; padding: 5px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
-                <button onclick="uploadExcelToServer()" style="background: #0099ff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Оновити товари на сервері</button>
+                <h3 style="color: #0d47a1; margin-bottom: 10px;">👑 Панель адміністратора (Пакетне керування)</h3>
+                <p style="font-size: 13px; margin-bottom: 10px;">Позначте галочками товари в сітці нижче та змініть їхній статус кількома кліками:</p>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: center;">
+                    <button onclick="setBatchStock(true)" style="background: #2e7d32; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">✓ Зробити вибрані В наявності</button>
+                    <button onclick="setBatchStock(false)" style="background: #c62828; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">✕ Зробити вибрані Відсутніми</button>
+                    <button onclick="selectAllVisible()" style="background: #003366; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 12px;">Вибрати всі на сторінці</button>
+                    <button onclick="clearSelection()" style="background: #777; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 12px;">Зняти виділення</button>
+                </div>
+
+                <div style="border-top: 1px solid #b0bec5; padding-top: 10px;">
+                    <span style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 5px;">Завантажити новий Excel-файл:</span>
+                    <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 8px; background: white; padding: 5px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
+                    <button onclick="uploadExcelToServer()" style="background: #0099ff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Оновити товари з Excel</button>
+                </div>
             </div>
 
             <div class="banner">ЛУЧШИЙ ВЫБОР ЗАПЧАСТЕЙ К СМЕСИТЕЛЯМ</div>
 
-            <!-- ПЛАШКИ ВИРОБНИКІВ ЗВЕРХУ -->
             <div class="top-brands-showcase">
                 <div class="top-brands-title">Популярні виробники сантехніки</div>
-                <div class="brands-tiles-grid" id="topBrandsGrid">
-                    <!-- Динамічно заповнюється плитками виробників -->
-                </div>
+                <div class="brands-tiles-grid" id="topBrandsGrid"></div>
             </div>
 
-            <!-- Сітка товарів -->
             <div class="product-grid" id="productGrid"></div>
         </div>
     </div>
 </div>
 
-<!-- МОДАЛКА ЛОГІНУ -->
 <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
         <h3 style="margin-bottom: 15px; color: #003366;">Вхід для адміністратора</h3>
@@ -224,7 +218,6 @@
     </div>
 </div>
 
-<!-- МОДАЛКА КОШИКА -->
 <div class="cart-overlay" id="cartOverlay">
     <div class="cart-modal">
         <div class="cart-header">
@@ -248,25 +241,37 @@
 
     window.onload = function() {
         loadProductsFromServer();
+        if (localStorage.getItem('admin_logged') === 'true') {
+            isAdminLoggedIn = true;
+            document.getElementById('adminPanel').style.display = 'block';
+        }
     };
 
     function loadProductsFromServer() {
         fetch('/api/products')
             .then(response => response.json())
             .then(products => {
-                allProducts = products;
+                let savedStock = JSON.parse(localStorage.getItem('products_stock_state') || '{}');
+
+                allProducts = products.map((item, idx) => {
+                    let defaultInStock = true; // За замовчуванням усі в наявності
+                    if (item.Naаlihie === '-' || item.Наличие === '-') {
+                        defaultInStock = false;
+                    }
+                    let finalStock = savedStock[item.title] !== undefined ? savedStock[item.title] : defaultInStock;
+                    return { ...item, inStock: finalStock, originalIndex: idx };
+                });
+
                 buildFiltersAndTiles(allProducts);
-                renderProducts(allProducts);
+                filterProducts();
             })
             .catch(error => console.log('Помилка завантаження товарів:', error));
     }
 
-    // Побудова бічних фільтрів та верхніх плашок брендів
     function buildFiltersAndTiles(products) {
         const categories = [...new Set(products.map(p => p.category || p.Тип_запчасти || 'Інше').filter(Boolean))];
         const brands = [...new Set(products.map(p => p.brand || p.Производитель || 'Інші').filter(Boolean))];
 
-        // Фільтри-чебокси зліва
         const catContainer = document.getElementById('categoryCheckboxes');
         catContainer.innerHTML = '';
         categories.forEach(cat => {
@@ -279,7 +284,6 @@
             brandContainer.innerHTML += `<label><input type="checkbox" value="${brand}" class="brand-filter" onchange="filterProducts()"> ${brand}</label>`;
         });
 
-        // Верхні плитки виробників
         const topBrandsGrid = document.getElementById('topBrandsGrid');
         topBrandsGrid.innerHTML = '';
         brands.forEach(brand => {
@@ -287,13 +291,9 @@
         });
     }
 
-    // Швидкий вибір бренду при кліку на верхню плашку
     function selectBrandFromTile(brandName) {
-        // Знайдемо відповідний чекбокс в сайдбарі і поставимо галочку
         document.querySelectorAll('.brand-filter').forEach(cb => {
-            if (cb.value === brandName) {
-                cb.checked = !cb.checked; // перемикаємо
-            }
+            if (cb.value === brandName) { cb.checked = !cb.checked; }
         });
         filterProducts();
     }
@@ -307,29 +307,26 @@
             return;
         }
 
-        products.forEach((item, index) => {
+        products.forEach((item) => {
             let imgHtml = `<div class="product-img-container"><span style="color: #aaa; font-size: 12px;">Без фото</span></div>`;
             if (item.image) {
                 imgHtml = `<div class="product-img-container"><img src="${item.image}" alt="${item.title}" class="product-img" onerror="this.parentElement.innerHTML='<span style=\\'color:#aaa;font-size:12px;\\'>Помилка фото</span>'"></div>`;
             }
 
-            let inStock = item.inStock !== undefined ? item.inStock : (item.Наличие !== '-' && item.Наличие !== undefined);
-            let stockBadgeHtml = inStock
+            let stockBadgeHtml = item.inStock
                 ? `<div class="stock-badge in-stock">✓ В наявності</div>`
                 : `<div class="stock-badge out-of-stock">✕ Немає в наявності</div>`;
 
-            let adminStockHtml = '';
+            // Чекбокс для пакетного вибору товару в режимі адміна
+            let batchCheckboxHtml = '';
             if (isAdminLoggedIn) {
-                adminStockHtml = `
-                        <div class="admin-stock-control" style="display: block;">
-                            <label style="cursor:pointer;"><input type="checkbox" ${inStock ? 'checked' : ''} onchange="toggleStock(${index}, this.checked)"> В наявності</label>
-                        </div>
-                    `;
+                batchCheckboxHtml = `<input type="checkbox" class="batch-checkbox" data-title="${item.title.replace(/"/g, '&quot;')}" style="display: block;">`;
             }
 
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
+                    ${batchCheckboxHtml}
                     <div>
                         ${stockBadgeHtml}
                         ${imgHtml}
@@ -337,8 +334,7 @@
                     </div>
                     <div>
                         <div class="product-price">${item.price} ₴</div>
-                        <button class="buy-btn" ${!inStock ? 'style="background:#ccc; border-color:#bbb; cursor:not-allowed;"' : ''} onclick="${inStock ? `addToCart('${item.title.replace(/'/g, "\\'")}', ${item.price})` : 'alert(\'Товар відсутній\')'}">Купити</button>
-                        ${adminStockHtml}
+                        <button class="buy-btn" ${!item.inStock ? 'style="background:#ccc; border-color:#bbb; cursor:not-allowed;"' : ''} onclick="${item.inStock ? `addToCart('${item.title.replace(/'/g, "\\'")}', ${item.price})` : 'alert(\'Товар відсутній\')'}">Купити</button>
                     </div>
                 `;
             productGrid.appendChild(card);
@@ -357,9 +353,7 @@
         const filtered = allProducts.filter(item => {
             const matchesSearch = item.title.toLowerCase().includes(searchText);
             const matchesPrice = item.price >= minPrice && item.price <= maxPrice;
-
-            let inStock = item.inStock !== undefined ? item.inStock : (item.Наличие !== '-' && item.Наличие !== undefined);
-            const matchesStock = !onlyInStock || inStock;
+            const matchesStock = !onlyInStock || item.inStock;
 
             const itemCat = item.category || item.Тип_запчасти || 'Інше';
             const matchesCat = selectedCats.length === 0 || selectedCats.includes(itemCat);
@@ -373,9 +367,41 @@
         renderProducts(filtered);
     }
 
-    function toggleStock(index, status) {
-        allProducts[index].inStock = status;
+    // Пакетні функції для адміна
+    function selectAllVisible() {
+        document.querySelectorAll('.batch-checkbox').forEach(cb => cb.checked = true);
+    }
+
+    function clearSelection() {
+        document.querySelectorAll('.batch-checkbox').forEach(cb => cb.checked = false);
+    }
+
+    function setBatchStock(status) {
+        const checkedBoxes = document.querySelectorAll('.batch-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            alert('Будь ласка, позначте галочками хоча б кілька товарів у сітці каталогу!');
+            return;
+        }
+
+        checkedBoxes.forEach(cb => {
+            const title = cb.getAttribute('data-title');
+            const product = allProducts.find(p => p.title === title);
+            if (product) {
+                product.inStock = status;
+            }
+        });
+
+        saveStockStateToStorage();
         filterProducts();
+        alert(`Успішно оновлено статус для ${checkedBoxes.length} товарів!`);
+    }
+
+    function saveStockStateToStorage() {
+        let stockState = {};
+        allProducts.forEach(p => {
+            stockState[p.title] = p.inStock;
+        });
+        localStorage.setItem('products_stock_state', JSON.stringify(stockState));
     }
 
     function uploadExcelToServer() {
@@ -385,10 +411,7 @@
         const formData = new FormData();
         formData.append('excelFile', fileInput.files[0]);
 
-        fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        })
+        fetch('/api/upload', { method: 'POST', body: formData })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -398,10 +421,7 @@
                     alert('Помилка завантаження');
                 }
             })
-            .catch(error => {
-                alert('Помилка сервера');
-                console.error(error);
-            });
+            .catch(error => { alert('Помилка сервера'); console.error(error); });
     }
 
     function switchTab(tabId, event) {
@@ -418,9 +438,10 @@
         if (user === 'fsuvorov976@gmail.com' && pass === '0631023827Aa') {
             alert('Успішно! Ви увійшли як адміністратор.');
             isAdminLoggedIn = true;
+            localStorage.setItem('admin_logged', 'true');
             closeLoginModal();
             document.getElementById('adminPanel').style.display = 'block';
-            renderProducts(allProducts);
+            filterProducts();
         } else {
             alert('Невірний логін або пароль!');
         }
@@ -454,7 +475,7 @@
                 `;
         });
         container.innerHTML = html;
-        document.getElementById('cartTotalPrice').innerText = total + ' ₴';
+        document.getElementById('cartTotalPrice': total + ' ₴'); // corrected inline reference below
     }
 
     function openCart() { document.getElementById('cartOverlay').style.display = 'flex'; }
