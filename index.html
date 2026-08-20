@@ -329,6 +329,9 @@
                                 <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
                                     <input type="radio" name="np_sub" value="postomat" onchange="switchNpSubtype()" style="accent-color: #0089ff;"> У поштомат
                                 </label>
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                    <input type="radio" name="np_sub" value="courier" onchange="switchNpSubtype()" style="accent-color: #0089ff;"> Кур'єром
+                                </label>
                             </div>
 
                             <div class="form-group" style="margin-top: 15px; margin-bottom: 5px;" onclick="event.stopPropagation()">
@@ -337,7 +340,7 @@
                                 <div id="npCitySuggestions" class="suggestions-list"></div>
                             </div>
                             <div style="display: flex; gap: 15px; font-size: 12px; margin-bottom: 12px;" onclick="event.stopPropagation()">
-                                <a href="#" onclick="selectCityPreset('Київ', 'db5c8890-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Київ</a>
+                                <a href="#" onclick="selectCityPreset('м. Київ, Київська обл.', 'db5c8890-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Київ</a>
                                 <a href="#" onclick="selectCityPreset('Одеса', 'db5c88f5-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Одеса</a>
                                 <a href="#" onclick="selectCityPreset('Дніпро', 'db5c88f0-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Дніпро</a>
                                 <a href="#" onclick="selectCityPreset('Харків', 'db5c88de-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Харків</a>
@@ -421,6 +424,9 @@
     let isAdminLoggedIn = false;
     let selectedCityRef = 'db5c8890-391c-11dd-90d9-001a92567626'; // Київ за замовчуванням
     let cachedWarehouses = [];
+
+    // Вставте сюди ваш дійсний ключ API Нової Пошти, якщо потрібно реальні дані відділень:
+    const NP_API_KEY = "";
 
     window.onload = function() {
         loadProductsFromServer();
@@ -692,7 +698,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                apiKey: "",
+                apiKey: NP_API_KEY,
                 modelName: "Address",
                 calledMethod: "searchSettlements",
                 methodProperties: { CityName: query, Limit: "10" }
@@ -736,13 +742,45 @@
 
     function loadNovaPoshtaWarehouses(cityRef) {
         const selectElem = document.getElementById('npTargetSelect');
+        const dynamicContainer = document.getElementById('npDynamicFields');
         if (selectElem) selectElem.innerHTML = '<option value="">Завантаження відділень...</option>';
+
+        const currentSubtype = document.querySelector('input[name="np_sub"]:checked').value;
+
+        if (currentSubtype === 'courier') {
+            if (dynamicContainer) {
+                dynamicContainer.innerHTML = `
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                            <label style="font-size: 12px; color: #444;">Вулиця *</label>
+                            <input type="text" id="courierStreet" placeholder="Назва вулиці" style="padding: 10px; font-size: 13px;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label style="font-size: 12px; color: #444;">Будинок *</label>
+                            <input type="text" id="courierBuilding" placeholder=" №" style="padding: 10px; font-size: 13px;">
+                        </div>
+                    </div>
+                `;
+            }
+            return;
+        } else {
+            if (dynamicContainer) {
+                dynamicContainer.innerHTML = `
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label id="npTargetLabel" style="font-size: 12px; color: #444;">Відділення <span style="color: red;">*</span></label>
+                        <select id="npTargetSelect" style="padding: 10px; font-size: 13px;">
+                            <option value="">Завантаження відділень...</option>
+                        </select>
+                    </div>
+                `;
+            }
+        }
 
         fetch('https://api.novaposhta.ua/v2.0/json/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                apiKey: "",
+                apiKey: NP_API_KEY,
                 modelName: "Address",
                 calledMethod: "getWarehouses",
                 methodProperties: {
@@ -758,12 +796,14 @@
                     renderFilteredWarehouses();
                 } else {
                     cachedWarehouses = [];
-                    if (selectElem) selectElem.innerHTML = '<option value="">Нічого не знайдено для цього міста</option>';
+                    const sel = document.getElementById('npTargetSelect');
+                    if (sel) sel.innerHTML = '<option value="">Нічого не знайдено для цього міста</option>';
                 }
             })
             .catch(err => {
                 console.log('Помилка завантаження відділень НП:', err);
-                if (selectElem) selectElem.innerHTML = '<option value="">Помилка завантаження</option>';
+                const sel = document.getElementById('npTargetSelect');
+                if (sel) sel.innerHTML = '<option value="">Помилка завантаження</option>';
             });
     }
 
@@ -772,6 +812,8 @@
         if (!selectElem) return;
 
         const currentSubtype = document.querySelector('input[name="np_sub"]:checked').value;
+        if (currentSubtype === 'courier') return;
+
         let filtered = [];
 
         if (currentSubtype === 'branch') {
