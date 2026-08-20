@@ -161,7 +161,7 @@
         <div class="content-area">
             <div class="admin-panel" id="adminPanel">
                 <h3>👑 Панель адміністратора</h3>
-                <p style="font-size: 13px; margin-bottom: 10px;">Завантажте Excel-файл (.xlsx) з колонками: <b>Назва</b> та <b>Ціна</b></p>
+                <p style="font-size: 13px; margin-bottom: 10px;">Завантажте Excel-файл (.xlsx) з Prom.ua</p>
                 <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 10px; background: white; padding: 5px; width: 100%;">
                 <button onclick="handleExcelUpload()" style="background: #0099ff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Оновити товари з Excel</button>
             </div>
@@ -401,7 +401,7 @@
             });
     }
 
-    // Обробка Excel
+    // Обробка Excel з урахуванням форматів Prom.ua
     function handleExcelUpload() {
         const fileInput = document.getElementById('excelFile');
         if (fileInput.files.length === 0) { alert('Оберіть Excel-файл!'); return; }
@@ -412,6 +412,8 @@
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
+
+            // Беремо перший лист "Export Products Sheet"
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const jsonRows = XLSX.utils.sheet_to_json(worksheet);
 
@@ -421,8 +423,9 @@
             productGrid.innerHTML = '';
 
             jsonRows.forEach(row => {
-                const title = row['Назва'] || row['Title'] || row['Товар'] || 'Без назви';
-                const price = row['Ціна'] || row['Price'] || row['Ціна, грн'] || '0';
+                // Підтримуємо колонки Prom.ua та альтернативні варіанти
+                const title = row['Название_позиции'] || row['Название_позиции_укр'] || row['Назва'] || row['Title'] || 'Без назви';
+                const price = row['Цена'] || row['Цена_от'] || row['Ціна'] || row['Price'] || 0;
 
                 const card = document.createElement('div');
                 card.className = 'product-card';
@@ -434,7 +437,7 @@
                 productGrid.appendChild(card);
             });
 
-            alert('Товари оновлено з Excel!');
+            alert('Товари успішно завантажено з Prom.ua файлу!');
         };
         reader.readAsArrayBuffer(file);
     }
