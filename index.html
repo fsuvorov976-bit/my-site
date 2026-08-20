@@ -3,13 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Авторизований сервіс - Alter-shop</title>
-    <!-- Підключаємо бібліотеку для читання Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
         body { background-color: #f4f4f4; color: #333; }
 
-        /* Верхня панель */
         .top-bar {
             background-color: #333;
             color: #fff;
@@ -26,7 +24,6 @@
             cursor: default;
         }
 
-        /* Шапка сайту */
         .header {
             background-color: #fff;
             display: flex;
@@ -85,13 +82,11 @@
         .product-price { font-size: 18px; font-weight: bold; color: #b12704; text-align: left; margin-bottom: 10px; }
         .buy-btn { background-color: #ffa41c; border: 1px solid #ff8f00; padding: 8px; width: 100%; font-weight: bold; cursor: pointer; border-radius: 3px; }
 
-        /* ПАНЕЛЬ АДМІНІСТРАТОРА */
         .admin-panel {
             display: none; background: #e3f2fd; border: 2px dashed #0099ff; padding: 20px; margin-bottom: 20px; border-radius: 6px;
         }
         .admin-panel h3 { color: #0d47a1; margin-bottom: 10px; }
 
-        /* МОДАЛКИ */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
@@ -103,7 +98,7 @@
         .modal-box input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; }
         .modal-box button { width: 100%; padding: 10px; background: #003366; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-        /* Випадний кошик */
+        /* Кошик */
         .cart-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: flex-end; z-index: 1000; }
         .cart-modal { width: 420px; background: white; height: 100%; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; font-size: 18px; font-weight: bold; }
@@ -117,15 +112,21 @@
         .cart-total-area { margin-top: auto; border-top: 1px solid #ddd; padding-top: 15px; }
         .cart-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 15px; }
         .checkout-main-btn { background: #0099ff; color: white; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: center; }
+
+        /* Сторінка оформлення замовлення */
+        .checkout-page { max-width: 800px; margin: 30px auto; background: white; padding: 30px; border-radius: 8px; border: 1px solid #ddd; display: none; }
+        .checkout-page h2 { color: #003366; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .back-btn { background: #666; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <div class="top-bar">
     <div>UA | RU &nbsp;&nbsp;&nbsp; 📞 +380 (50) 598-85-63</div>
-    <div>
-        <a href="#" class="hidden-cabinet" onclick="openLoginModal(event)">Кабінет</a>
-    </div>
+    <div><a href="#" class="hidden-cabinet" onclick="openLoginModal(event)">Кабінет</a></div>
 </div>
 
 <header class="header">
@@ -148,34 +149,57 @@
     <a onclick="switchTab('delivery', event)">Доставка та оплата</a>
 </nav>
 
-<div id="catalog" class="page-section active-section">
-    <aside>
-        <h3>Фільтри</h3>
-        <div class="filter-group">
-            <h4>Ціна</h4>
-            <div class="price-inputs"><input type="text" placeholder="від 1"><span>-</span><input type="text" placeholder="до 30255"></div>
-        </div>
-    </aside>
+<!-- КАТАЛОГ -->
+<div id="catalog" class="page-section active-section" style="flex-direction: column;">
+    <div style="display: flex; gap: 20px; width: 100%;">
+        <aside style="width: 260px; height: fit-content;">
+            <h3>Фільтри</h3>
+            <div class="filter-group">
+                <h4>Ціна</h4>
+                <div class="price-inputs"><input type="text" placeholder="від 1"><span>-</span><input type="text" placeholder="до 30255"></div>
+            </div>
+        </aside>
 
-    <div class="content-area">
-        <div class="admin-panel" id="adminPanel">
-            <h3>👑 Панель адміністратора</h3>
-            <p style="font-size: 13px; margin-bottom: 10px;">Завантажте Excel-файл (.xlsx) з колонками: <b>Назва</b> та <b>Ціна</b></p>
-            <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 10px; background: white; padding: 5px; width: 100%;">
-            <button onclick="handleExcelUpload()" style="background: #0099ff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Оновити товари з Excel</button>
-        </div>
+        <div class="content-area">
+            <div class="admin-panel" id="adminPanel">
+                <h3>👑 Панель адміністратора</h3>
+                <p style="font-size: 13px; margin-bottom: 10px;">Завантажте Excel-файл (.xlsx) з колонками: <b>Назва</b> та <b>Ціна</b></p>
+                <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 10px; background: white; padding: 5px; width: 100%;">
+                <button onclick="handleExcelUpload()" style="background: #0099ff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Оновити товари з Excel</button>
+            </div>
 
-        <div class="banner">ЛУЧШИЙ ВЫБОР ЗАПЧАСТЕЙ К СМЕСИТЕЛЯМ</div>
+            <div class="banner">ЛУЧШИЙ ВЫБОР ЗАПЧАСТЕЙ К СМЕСИТЕЛЯМ</div>
 
-        <div class="product-grid" id="productGrid">
-            <!-- Дефолтний товар -->
-            <div class="product-card">
-                <div class="product-title">Засіб для видалення вапняного нальоту GEBERIT AQUACLEAN</div>
-                <div class="product-price">594 ₴</div>
-                <button class="buy-btn" onclick="addToCart('Засіб для видалення вапняного нальоту GEBERIT AQUACLEAN', 594)">Купити</button>
+            <div class="product-grid" id="productGrid">
+                <div class="product-card">
+                    <div class="product-title">Засіб для видалення вапняного нальоту GEBERIT AQUACLEAN</div>
+                    <div class="product-price">594 ₴</div>
+                    <button class="buy-btn" onclick="addToCart('Засіб для видалення вапняного нальоту GEBERIT AQUACLEAN', 594)">Купити</button>
+                </div>
             </div>
         </div>
     </div>
+</div>
+
+<!-- СТОРІНКА ОФОРМЛЕННЯ ЗАМОВЛЕННЯ -->
+<div class="checkout-page" id="checkoutPage">
+    <button class="back-btn" onclick="backToCatalog()">← Назад до покупок</button>
+    <h2>Оформлення замовлення</h2>
+
+    <div class="form-group">
+        <label>Ваше ім'я та прізвище *</label>
+        <input type="text" id="orderName" placeholder="Введіть ПІБ">
+    </div>
+    <div class="form-group">
+        <label>Номер телефону *</label>
+        <input type="text" id="orderPhone" placeholder="+380...">
+    </div>
+    <div class="form-group">
+        <label>Місто та відділення Нової Пошти *</label>
+        <input type="text" id="orderAddress" placeholder="Місто, № відділення">
+    </div>
+
+    <button class="checkout-main-btn" onclick="submitOrderToTelegram()">Підтвердити та надіслати замовлення</button>
 </div>
 
 <div id="home" class="page-section"><div style="background:#fff; padding:20px; width:100%;"><h2>Головна</h2></div></div>
@@ -202,22 +226,19 @@
             <button class="close-btn" onclick="closeCart()">✕</button>
         </div>
 
-        <div id="cartItemsContainer" style="flex-grow: 1; overflow-y: auto;">
-            <!-- Сюди динамічно додаються товари -->
-        </div>
+        <div id="cartItemsContainer" style="flex-grow: 1; overflow-y: auto;"></div>
 
         <div class="cart-total-area">
             <div class="cart-total">
                 <span>Разом:</span>
                 <span id="cartTotalPrice">0 ₴</span>
             </div>
-            <button class="checkout-main-btn" onclick="alert('Оформлення замовлення')">Оформити замовлення</button>
+            <button class="checkout-main-btn" onclick="goToCheckout()">Перейти до оформлення</button>
         </div>
     </div>
 </div>
 
 <script>
-    // Масив для зберігання товарів у кошику
     let cart = [];
 
     function switchTab(tabId, event) {
@@ -231,13 +252,11 @@
         e.preventDefault();
         document.getElementById('loginModal').style.display = 'flex';
     }
-    function closeLoginModal() {
-        document.getElementById('loginModal').style.display = 'none';
-    }
+    function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
 
     function checkAdminLogin() {
-        const user = document.getElementById('adminUser').value.trim();
-        const pass = document.getElementById('adminPass').value.trim();
+        const user = document.getElementById('adminUser'].value.trim();
+        const pass = document.getElementById('adminPass'].value.trim();
 
         if (user === 'fsuvorov976@gmail.com' && pass === '0631023827Aa') {
             alert('Успішно! Вітаємо, ви увійшли як адміністратор.');
@@ -248,7 +267,6 @@
         }
     }
 
-    // Функції кошика
     function addToCart(title, price) {
         const existingItem = cart.find(item => item.title === title);
         if (existingItem) {
@@ -314,13 +332,81 @@
     function openCart() { document.getElementById('cartOverlay').style.display = 'flex'; }
     function closeCart() { document.getElementById('cartOverlay').style.display = 'none'; }
 
+    function goToCheckout() {
+        if (cart.length === 0) {
+            alert('Кошик порожній!');
+            return;
+        }
+        closeCart();
+        document.getElementById('catalog').style.display = 'none';
+        document.getElementById('checkoutPage').style.display = 'block';
+        window.scrollTo(0,0);
+    }
+
+    function backToCatalog() {
+        document.getElementById('checkoutPage').style.display = 'none';
+        document.getElementById('catalog').style.display = 'flex';
+    }
+
+    // ВІДПРАВКА ЗАМОВЛЕННЯ В TELEGRAM (Ваш токен та ID вже налаштовані)
+    function submitOrderToTelegram() {
+        const name = document.getElementById('orderName').value.trim();
+        const phone = document.getElementById('orderPhone').value.trim();
+        const address = document.getElementById('orderAddress').value.trim();
+
+        if (!name || !phone || !address) {
+            alert('Будь ласка, заповніть усі поля для доставки!');
+            return;
+        }
+
+        let message = `🚨 Нове замовлення на сайті!\n\n`;
+        message += `👤 Ім'я: ${name}\n`;
+        message += `📞 Телефон: ${phone}\n`;
+        message += `📍 Доставка: ${address}\n\n`;
+        message += `🛒 Товари:\n`;
+
+        let totalSum = 0;
+        cart.forEach(item => {
+            let sum = item.price * item.quantity;
+            totalSum += sum;
+            message += `- ${item.title} (${item.quantity} шт.) — ${sum} ₴\n`;
+        });
+
+        message += `\n💰 Загальна сума: ${totalSum} ₴`;
+
+        const BOT_TOKEN = '8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4';
+        const CHAT_ID = '6432307028';
+
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: CHAT_ID,
+                text: message,
+                parse_mode: 'HTML'
+            })
+        })
+            .then(response => {
+                if (response.ok) {
+                    alert('Дякуємо! Ваше замовлення успішно оформлено і надіслано в Telegram.');
+                    cart = [];
+                    updateCartUI();
+                    backToCatalog();
+                } else {
+                    alert('Помилка при відправці замовлення в Telegram.');
+                }
+            })
+            .catch(error => {
+                alert('Помилка мережі. Спробуйте пізніше.');
+            });
+    }
+
     // Обробка Excel
     function handleExcelUpload() {
         const fileInput = document.getElementById('excelFile');
-        if (fileInput.files.length === 0) {
-            alert('Будь ласка, оберіть Excel-файл!');
-            return;
-        }
+        if (fileInput.files.length === 0) { alert('Оберіть Excel-файл!'); return; }
 
         const file = fileInput.files[0];
         const reader = new FileReader();
@@ -328,14 +414,10 @@
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             const jsonRows = XLSX.utils.sheet_to_json(worksheet);
 
-            if (jsonRows.length === 0) {
-                alert('Файл порожній.');
-                return;
-            }
+            if (jsonRows.length === 0) { alert('Файл порожній.'); return; }
 
             const productGrid = document.getElementById('productGrid');
             productGrid.innerHTML = '';
@@ -354,9 +436,8 @@
                 productGrid.appendChild(card);
             });
 
-            alert('Товари успішно оновлено з Excel!');
+            alert('Товари оновлено з Excel!');
         };
-
         reader.readAsArrayBuffer(file);
     }
 </script>
