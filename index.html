@@ -272,7 +272,7 @@
     </div>
 </div>
 
-<!-- PROM.UA CHECKOUT PAGE MODAL -->
+<!-- CHECKOUT PAGE MODAL -->
 <div class="checkout-overlay" id="checkoutOverlay">
     <div class="checkout-container">
         <div class="checkout-top-bar">
@@ -376,8 +376,8 @@
                     <div class="option-card active-option-card" onclick="selectPaymentCard(this)">
                         <input type="radio" name="payment" checked>
                         <div>
-                            <strong>Безпечна оплата карткою (промОплата)</strong>
-                            <div style="font-size: 12px; color: #666; margin-top: 3px;">Пром гарантує безпеку. Повернемо гроші при відмові від посилки.</div>
+                            <strong>Безпечна оплата карткою</strong>
+                            <div style="font-size: 12px; color: #666; margin-top: 3px;">Швидка та захищена оплата онлайн.</div>
                         </div>
                     </div>
 
@@ -626,35 +626,60 @@
     }
 
     function addToCart(title, price) {
-        cart.push({ title, price, quantity: 1 });
+        let existing = cart.find(item => item.title === title);
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            cart.push({ title, price, quantity: 1 });
+        }
         updateCartUI();
         openCart();
     }
 
-    // Функція видалення конкретного товару з кошика за його індексом
+    function changeQuantity(index, delta) {
+        cart[index].quantity += delta;
+        if (cart[index].quantity <= 0) {
+            cart.splice(index, 1);
+        }
+        updateCartUI();
+    }
+
     function removeFromCart(index) {
         cart.splice(index, 1);
         updateCartUI();
     }
 
     function updateCartUI() {
-        document.getElementById('cartBtn').innerText = `🛒 Кошик (${cart.length})`;
+        let totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+        document.getElementById('cartBtn').innerText = `🛒 Кошик (${totalCount})`;
         const container = document.getElementById('cartItemsContainer');
+
         if (cart.length === 0) {
             container.innerHTML = '<p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">Кошик порожній</p>';
             document.getElementById('cartTotalPrice').innerText = '0 ₴';
             return;
         }
+
         let html = '', total = 0;
         cart.forEach((item, index) => {
-            total += item.price;
-            html += `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; font-size: 13px;">
-                <span style="max-width: 230px;">${item.title}</span>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-weight: bold; color: #b12704; white-space: nowrap;">${item.price} ₴</span>
-                    <button onclick="removeFromCart(${index})" style="background: none; border: none; color: #c62828; cursor: pointer; font-size: 16px; font-weight: bold;" title="Видалити товар">✕</button>
-                </div>
-            </div>`;
+            let itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; font-size: 13px;">
+                    <div style="max-width: 170px;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">${item.title}</div>
+                        <div style="color: #b12704; font-weight: bold;">${item.price} ₴ / шт.</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="display: flex; align-items: center; border: 1px solid #ccc; border-radius: 4px; overflow: hidden;">
+                            <button onclick="changeQuantity(${index}, -1)" style="background: #f0f0f0; border: none; padding: 4px 8px; cursor: pointer; font-weight: bold;">-</button>
+                            <span style="padding: 0 8px; font-weight: bold; font-size: 12px;">${item.quantity}</span>
+                            <button onclick="changeQuantity(${index}, 1)" style="background: #f0f0f0; border: none; padding: 4px 8px; cursor: pointer; font-weight: bold;">+</button>
+                        </div>
+                        <span style="font-weight: bold; color: #b12704; min-width: 50px; text-align: right;">${itemTotal} ₴</span>
+                        <button onclick="removeFromCart(${index})" style="background: none; border: none; color: #c62828; cursor: pointer; font-size: 16px; font-weight: bold;" title="Видалити">✕</button>
+                    </div>
+                </div>`;
         });
         container.innerHTML = html;
         document.getElementById('cartTotalPrice').innerText = total + ' ₴';
@@ -666,11 +691,13 @@
     function openCheckout() {
         if (cart.length === 0) { alert('Кошик порожній!'); return; }
         closeCart();
-        document.getElementById('sidebarCount').innerText = `${cart.length} товар(ів)`;
+        let totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+        document.getElementById('sidebarCount').innerText = `${totalCount} товар(ів)`;
         let listHtml = '', total = 0;
         cart.forEach(item => {
-            total += item.price;
-            listHtml += `<div class="sidebar-item"><span>${item.title}</span><strong style="color: #b12704; white-space: nowrap;">${item.price} ₴</strong></div>`;
+            let itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            listHtml += `<div class="sidebar-item"><span>${item.title} (<b>${item.quantity} шт.</b>)</span><strong style="color: #b12704; white-space: nowrap;">${itemTotal} ₴</strong></div>`;
         });
         document.getElementById('sidebarProductList').innerHTML = listHtml;
         document.getElementById('sidebarTotalPrice').innerText = total + ' ₴';
@@ -877,7 +904,7 @@
         const activePaymentCard = document.querySelector('#checkoutOverlay .checkout-step:nth-last-child(1) .option-card.active-option-card');
         const paymentType = activePaymentCard ? activePaymentCard.querySelector('strong').innerText : 'Не вказано';
 
-        let total = cart.reduce((sum, item) => sum + item.price, 0);
+        let total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
         const orderData = {
             lastName,
