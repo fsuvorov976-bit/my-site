@@ -60,12 +60,14 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
 
 // --- ОБРОБНИК ЗАМОВЛЕНЬ ДЛЯ TELEGRAM ---
 app.post('/api/order', async (req, res) => {
-    const { lastName, firstName, phone, cart, total, delivery, payment } = req.body;
+    // Додали deliveryDetails сюди:
+    const { lastName, firstName, phone, cart, total, delivery, deliveryDetails, payment } = req.body;
 
     let message = `🛒 <b>Нове замовлення!</b>\n\n`;
     message += `👤 <b>Клієнт:</b> ${lastName} ${firstName}\n`;
     message += `📞 <b>Телефон:</b> ${phone}\n`;
     message += `🚚 <b>Доставка:</b> ${delivery}\n`;
+    message += `📍 <b>Відділення/Адреса:</b> ${deliveryDetails || 'Не вказано'}\n`;
     message += `💳 <b>Оплата:</b> ${payment}\n\n`;
     message += `📦 <b>Товари:</b>\n`;
 
