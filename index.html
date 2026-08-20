@@ -431,7 +431,6 @@
     function handleCabinetClick(e) {
         e.preventDefault();
         if (isAdminLoggedIn) {
-            // Вихід з адмінки
             if (confirm('Бажаєте вийти з режиму адміністратора?')) {
                 isAdminLoggedIn = false;
                 localStorage.removeItem('admin_logged');
@@ -440,7 +439,6 @@
                 filterProducts();
             }
         } else {
-            // Відкрити вікно логіну
             document.getElementById('loginModal').style.display = 'flex';
         }
     }
@@ -448,7 +446,7 @@
     function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
 
     function checkAdminLogin() {
-        const user = document.getElementById('adminUser'].value.trim(); // safe handling
+        const user = document.getElementById('adminUser').value.trim();
         const pass = document.getElementById('adminPass').value.trim();
         if (user === 'fsuvorov976@gmail.com' && pass === '0631023827Aa') {
             alert('Успішно! Ви увійшли як адміністратор.');
