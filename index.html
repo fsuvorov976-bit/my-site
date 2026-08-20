@@ -344,7 +344,6 @@
                                 <a href="#" onclick="selectCityPreset('Одеса', 'db5c88f5-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Одеса</a>
                                 <a href="#" onclick="selectCityPreset('Дніпро', 'db5c88f0-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Дніпро</a>
                                 <a href="#" onclick="selectCityPreset('Харків', 'db5c88de-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Харків</a>
-
                             </div>
 
                             <div id="npDynamicFields" onclick="event.stopPropagation()">
@@ -422,10 +421,9 @@
     let allProducts = [];
     let cart = [];
     let isAdminLoggedIn = false;
-    let selectedCityRef = '8d5a980d-391c-11dd-90d9-001a92567626'; // Коректний CityRef для Києва
+    let selectedCityRef = '8d5a980d-391c-11dd-90d9-001a92567626';
     let cachedWarehouses = [];
 
-    // Вставте сюди ваш дійсний ключ API Нової Пошти:
     const NP_API_KEY = "";
 
     window.onload = function() {
@@ -685,8 +683,6 @@
         }
     }
 
-    // --- API НОВОЇ ПОЧТИ ---
-
     function searchNpCities(query) {
         const suggestionsBox = document.getElementById('npCitySuggestions');
         if (query.length < 2) {
@@ -849,10 +845,43 @@
             return;
         }
 
-        alert(`Дякуємо за замовлення, ${firstName} ${lastName}! Менеджер зв'яжеться з вами.`);
-        cart = [];
-        updateCartUI();
-        closeCheckout();
+        const deliveryType = document.getElementById('npRadio').checked ? 'Нова Пошта' : 'Самовивіз';
+
+        const activePaymentCard = document.querySelector('#checkoutOverlay .checkout-step:nth-last-child(1) .option-card.active-option-card');
+        const paymentType = activePaymentCard ? activePaymentCard.querySelector('strong').innerText : 'Не вказано';
+
+        let total = cart.reduce((sum, item) => sum + item.price, 0);
+
+        const orderData = {
+            lastName,
+            firstName,
+            phone,
+            cart,
+            total,
+            delivery: deliveryType,
+            payment: paymentType
+        };
+
+        fetch('/api/order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Дякуємо за замовлення, ${firstName} ${lastName}! Ми надіслали його в обробку.`);
+                    cart = [];
+                    updateCartUI();
+                    closeCheckout();
+                } else {
+                    alert('Помилка при оформленні замовлення: ' + (data.error || 'Спробуйте ще раз.'));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Помилка з\'єднання з сервером.');
+            });
     }
 </script>
 
