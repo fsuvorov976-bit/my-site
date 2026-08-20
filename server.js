@@ -12,6 +12,10 @@ app.use(express.static(__dirname));
 
 const DATA_FILE = path.join(__dirname, 'products.json');
 
+// --- НАЛАШТУВАННЯ TELEGRAM БОТА ---
+const TELEGRAM_BOT_TOKEN = '8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4';
+const TELEGRAM_CHAT_ID = '6432307028';
+
 app.get('/api/products', (req, res) => {
     if (fs.existsSync(DATA_FILE)) {
         const data = fs.readFileSync(DATA_FILE, 'utf8');
@@ -51,6 +55,50 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Помилка при обробці Excel файлу' });
+    }
+});
+
+// --- ОБРОБНИК ЗАМОВЛЕНЬ ДЛЯ TELEGRAM ---
+app.post('/api/order', async (req, res) => {
+    const { lastName, firstName, phone, cart, total, delivery, payment } = req.body;
+
+    let message = `🛒 <b>Нове замовлення!</b>\n\n`;
+    message += `👤 <b>Клієнт:</b> ${lastName} ${firstName}\n`;
+    message += `📞 <b>Телефон:</b> ${phone}\n`;
+    message += `🚚 <b>Доставка:</b> ${delivery}\n`;
+    message += `💳 <b>Оплата:</b> ${payment}\n\n`;
+    message += `📦 <b>Товари:</b>\n`;
+
+    if (cart && Array.isArray(cart)) {
+        cart.forEach((item, index) => {
+            message += `${index + 1}. ${item.title} — ${item.price} ₴\n`;
+        });
+    }
+
+    message += `\n💰 <b>Разом до сплати:</b> ${total} ₴`;
+
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: message,
+                parse_mode: 'HTML'
+            })
+        });
+
+        const result = await telegramResponse.json();
+        if (result.ok) {
+            res.json({ success: true });
+        } else {
+            console.error('Telegram API error:', result);
+            res.json({ success: false, error: result.description });
+        }
+    } catch (error) {
+        console.error('Помилка відправки в Telegram:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 
