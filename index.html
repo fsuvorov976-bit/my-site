@@ -11,9 +11,9 @@
             background-color: #002244; color: #fff; font-size: 13px;
             display: flex; justify-content: space-between; padding: 8px 40px; align-items: center;
         }
-        .cabinet-wrapper { opacity: 0.2; transition: opacity 0.3s; }
+        .cabinet-wrapper { opacity: 0.8; transition: opacity 0.3s; }
         .cabinet-wrapper:hover { opacity: 1; }
-        .top-bar a.hidden-cabinet { color: #fff; text-decoration: none; }
+        .top-bar a.hidden-cabinet { color: #fff; text-decoration: none; cursor: pointer; }
 
         .header {
             background-color: #fff; display: flex; align-items: center;
@@ -122,7 +122,9 @@
 
 <div class="top-bar">
     <div>UA &nbsp;&nbsp;&nbsp; 📞 +380 (97) 431-82-19</div>
-    <div class="cabinet-wrapper"><a href="#" class="hidden-cabinet" onclick="openLoginModal(event)">Кабінет</a></div>
+    <div class="cabinet-wrapper">
+        <a href="#" class="hidden-cabinet" id="cabinetLink" onclick="handleCabinetClick(event)">Кабінет</a>
+    </div>
 </div>
 
 <header class="header">
@@ -227,7 +229,7 @@
         </div>
         <div class="cart-total-area">
             <div class="cart-total"><span>Разом:</span><span id="cartTotalPrice">0 ₴</span></div>
-            <button class="checkout-main-btn">Перейти до оформлення</button>
+            <button class="checkout-main-btn" onclick="checkoutOrder()">Перейти до оформлення</button>
         </div>
     </div>
 </div>
@@ -242,6 +244,7 @@
         if (localStorage.getItem('admin_logged') === 'true') {
             isAdminLoggedIn = true;
             document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('cabinetLink').innerText = 'Вийти (Адмін)';
         }
     };
 
@@ -425,11 +428,27 @@
         document.getElementById(tabId).classList.add('active-section');
     }
 
-    function openLoginModal(e) { e.preventDefault(); document.getElementById('loginModal').style.display = 'flex'; }
+    function handleCabinetClick(e) {
+        e.preventDefault();
+        if (isAdminLoggedIn) {
+            // Вихід з адмінки
+            if (confirm('Бажаєте вийти з режиму адміністратора?')) {
+                isAdminLoggedIn = false;
+                localStorage.removeItem('admin_logged');
+                document.getElementById('adminPanel').style.display = 'none';
+                document.getElementById('cabinetLink').innerText = 'Кабінет';
+                filterProducts();
+            }
+        } else {
+            // Відкрити вікно логіну
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+    }
+
     function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
 
     function checkAdminLogin() {
-        const user = document.getElementById('adminUser').value.trim();
+        const user = document.getElementById('adminUser'].value.trim(); // safe handling
         const pass = document.getElementById('adminPass').value.trim();
         if (user === 'fsuvorov976@gmail.com' && pass === '0631023827Aa') {
             alert('Успішно! Ви увійшли як адміністратор.');
@@ -437,6 +456,7 @@
             localStorage.setItem('admin_logged', 'true');
             closeLoginModal();
             document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('cabinetLink').innerText = 'Вийти (Адмін)';
             filterProducts();
         } else {
             alert('Невірний логін або пароль!');
@@ -447,6 +467,17 @@
         cart.push({ title, price, quantity: 1 });
         updateCartUI();
         openCart();
+    }
+
+    function checkoutOrder() {
+        if (cart.length === 0) {
+            alert('Кошик порожній!');
+            return;
+        }
+        alert('Дякуємо за замовлення! Наш менеджер зв\'яжеться з вами найближчим часом.');
+        cart = [];
+        updateCartUI();
+        closeCart();
     }
 
     function updateCartUI() {
