@@ -130,7 +130,7 @@
         .step-header { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: bold; color: #111; margin-bottom: 15px; }
         .step-number { background: #0089ff; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; }
 
-        .form-group { margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; position: relative; }
         .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 600; }
         .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #dcdfe6; border-radius: 6px; font-size: 14px; outline: none; background: #fff; transition: border 0.2s; }
         .form-group input:focus, .form-group select:focus { border-color: #0089ff; }
@@ -150,6 +150,15 @@
             background: #fff; border: 1px solid #0089ff; color: #0089ff; padding: 12px; width: 100%; font-weight: bold; border-radius: 6px; cursor: pointer; text-align: center; margin-top: 15px; transition: background 0.2s;
         }
         .continue-step-btn:hover { background: #f0f7ff; }
+
+        /* Автодоповнення міст */
+        .suggestions-list {
+            position: absolute; top: 100%; left: 0; right: 0; background: #fff;
+            border: 1px solid #dcdfe6; border-top: none; border-radius: 0 0 6px 6px;
+            max-height: 150px; overflow-y: auto; z-index: 100; display: none;
+        }
+        .suggestion-item { padding: 8px 12px; font-size: 13px; cursor: pointer; }
+        .suggestion-item:hover { background: #f0f7ff; }
     </style>
 </head>
 <body>
@@ -319,10 +328,7 @@
                                 <strong style="color: #003366; display: flex; align-items: center; gap: 6px;">
                                     <span style="color: #ed1c24; font-size: 16px;">⛟</span> Нова Пошта
                                 </strong>
-                                <span style="color: #666; font-size: 13px;">від 70 ₴</span>
-                            </div>
-                            <div style="margin-top: 4px;">
-                                <a href="#" onclick="alert('Детальні тарифні умови Нової Пошти'); event.stopPropagation();" style="color: #0089ff; font-size: 12px; text-decoration: none;">Умови доставки</a>
+                                <span style="color: #666; font-size: 13px;">за тарифами перевізника</span>
                             </div>
 
                             <!-- Internal NP Suboptions -->
@@ -338,17 +344,18 @@
                                 </label>
                             </div>
 
-                            <!-- City Input & Quick Selectors -->
+                            <!-- City Input & Autocomplete -->
                             <div class="form-group" style="margin-top: 15px; margin-bottom: 5px;" onclick="event.stopPropagation()">
                                 <label style="font-size: 12px; color: #444;">Населений пункт <span style="color: red;">*</span></label>
-                                <input type="text" id="npCityInput" placeholder="Вкажіть населений пункт" style="padding: 10px; font-size: 13px;">
+                                <input type="text" id="npCityInput" placeholder="Почніть вводити назву міста..." oninput="searchNpCities(this.value)" autocomplete="off" style="padding: 10px; font-size: 13px;">
+                                <div id="npCitySuggestions" class="suggestions-list"></div>
                             </div>
                             <div style="display: flex; gap: 15px; font-size: 12px; margin-bottom: 12px;" onclick="event.stopPropagation()">
-                                <a href="#" onclick="setCity('Київ'); return false;" style="color: #0089ff; text-decoration: none;">Київ</a>
-                                <a href="#" onclick="setCity('Одеса'); return false;" style="color: #0089ff; text-decoration: none;">Одеса</a>
-                                <a href="#" onclick="setCity('Дніпро'); return false;" style="color: #0089ff; text-decoration: none;">Дніпро</a>
-                                <a href="#" onclick="setCity('Харків'); return false;" style="color: #0089ff; text-decoration: none;">Харків</a>
-                                <a href="#" onclick="setCity('Львів'); return false;" style="color: #0089ff; text-decoration: none;">Львів</a>
+                                <a href="#" onclick="selectCityPreset('Київ', 'db5c8890-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Київ</a>
+                                <a href="#" onclick="selectCityPreset('Одеса', 'db5c88f5-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Одеса</a>
+                                <a href="#" onclick="selectCityPreset('Дніпро', 'db5c88f0-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Дніпро</a>
+                                <a href="#" onclick="selectCityPreset('Харків', 'db5c88de-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Харків</a>
+                                <a href="#" onclick="selectCityPreset('Львів', 'db5c88f3-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Львів</a>
                             </div>
 
                             <!-- Dynamic Container for Branch / Postomat / Courier -->
@@ -356,15 +363,10 @@
                                 <div class="form-group" style="margin-bottom: 0;">
                                     <label id="npTargetLabel" style="font-size: 12px; color: #444;">Відділення <span style="color: red;">*</span></label>
                                     <select id="npTargetSelect" style="padding: 10px; font-size: 13px;">
-                                        <option value="">Виберіть відділення</option>
-                                        <option value="1">Відділення №1 (до 30 кг): вул. Промислова, 2</option>
-                                        <option value="2">Відділення №2 (до 50 кг): вул. Центральна, 14</option>
-                                        <option value="3">Відділення №3 (без обмежень): шосе Київське, 8</option>
+                                        <option value="">Спочатку оберіть населений пункт</option>
                                     </select>
                                 </div>
                             </div>
-
-                            <button type="button" class="continue-step-btn" onclick="alert('Доставка успішно обрана!')">Продовжити</button>
                         </div>
                     </div>
 
@@ -436,6 +438,7 @@
     let allProducts = [];
     let cart = [];
     let isAdminLoggedIn = false;
+    let selectedCityRef = 'db5c8890-391c-11dd-90d9-001a92567626'; // По замовчуванню Київ
 
     window.onload = function() {
         loadProductsFromServer();
@@ -444,6 +447,8 @@
             document.getElementById('adminPanel').style.display = 'block';
             document.getElementById('cabinetLink').innerText = 'Вийти (Адмін)';
         }
+        // Завантажити відділення для Києва при старті
+        loadNovaPoshtaWarehouses(selectedCityRef, '1');
     };
 
     function loadProductsFromServer() {
@@ -451,7 +456,6 @@
             .then(response => response.json())
             .then(products => {
                 let savedStock = JSON.parse(localStorage.getItem('products_stock_state') || '{}');
-
                 allProducts = products.map((item, idx) => {
                     let defaultInStock = true;
                     if (item.Naаlihie === '-' || item.Наличие === '-') {
@@ -460,7 +464,6 @@
                     let finalStock = savedStock[item.title] !== undefined ? savedStock[item.title] : defaultInStock;
                     return { ...item, inStock: finalStock, originalIndex: idx };
                 });
-
                 buildFiltersAndTiles(allProducts);
                 filterProducts();
             })
@@ -524,17 +527,17 @@
             const card = document.createElement('div');
             card.className = 'product-card';
             card.innerHTML = `
-                    ${batchCheckboxHtml}
-                    <div>
-                        ${stockBadgeHtml}
-                        ${imgHtml}
-                        <div class="product-title" title="${item.title}">${item.title}</div>
-                    </div>
-                    <div>
-                        <div class="product-price">${item.price} ₴</div>
-                        <button class="buy-btn" ${!item.inStock ? 'style="background:#ccc; border-color:#bbb; cursor:not-allowed;"' : ''} onclick="${item.inStock ? `addToCart('${item.title.replace(/'/g, "\\'")}', ${item.price})` : 'alert(\'Товар відсутній\')'}">Купити</button>
-                    </div>
-                `;
+                ${batchCheckboxHtml}
+                <div>
+                    ${stockBadgeHtml}
+                    ${imgHtml}
+                    <div class="product-title" title="${item.title}">${item.title}</div>
+                </div>
+                <div>
+                    <div class="product-price">${item.price} ₴</div>
+                    <button class="buy-btn" ${!item.inStock ? 'style="background:#ccc; border-color:#bbb; cursor:not-allowed;"' : ''} onclick="${item.inStock ? `addToCart('${item.title.replace(/'/g, "\\'")}', ${item.price})` : 'alert(\'Товар відсутній\')'}">Купити</button>
+                </div>
+            `;
             productGrid.appendChild(card);
         });
     }
@@ -655,9 +658,9 @@
         cart.forEach(item => {
             total += item.price;
             html += `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; font-size: 13px;">
-                    <span style="max-width: 250px;">${item.title}</span>
-                    <span style="font-weight: bold; color: #b12704;">${item.price} ₴</span>
-                </div>`;
+                <span style="max-width: 250px;">${item.title}</span>
+                <span style="font-weight: bold; color: #b12704;">${item.price} ₴</span>
+            </div>`;
         });
         container.innerHTML = html;
         document.getElementById('cartTotalPrice').innerText = total + ' ₴';
@@ -695,53 +698,143 @@
         }
     }
 
+    // --- ИНТЕГРАЦИЯ API НОВОЙ ПОЧТЫ ДЛЯ ГОРОДОВ И ОТДЕЛЕНИЙ ---
+
+    function searchNpCities(query) {
+        const suggestionsBox = document.getElementById('npCitySuggestions');
+        if (query.length < 2) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        // Запрос к публичному API Новой Почты для поиска населенных пунктов
+        fetch('https://api.novaposhta.ua/v2.0/json/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                apiKey: "", // Пустой ключ работает для публичных методов поиска городов/отделений
+                modelName: "Address",
+                calledMethod: "searchSettlements",
+                methodProperties: { CityName: query, Limit: "10" }
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data && data.data.length > 0 && data.data[0].Addresses) {
+                    let html = '';
+                    data.data[0].Addresses.forEach(city => {
+                        let cityName = city.Present;
+                        let cityRef = city.DeliveryCity;
+                        html += `<div class="suggestion-item" onclick="selectCityFromApi('${cityName.replace(/'/g, "\\'")}', '${cityRef}')">${cityName}</div>`;
+                    });
+                    suggestionsBox.innerHTML = html;
+                    suggestionsBox.style.display = 'block';
+                } else {
+                    suggestionsBox.style.display = 'none';
+                }
+            })
+            .catch(err => console.log('Помилка API НП:', err));
+    }
+
+    function selectCityFromApi(cityName, cityRef) {
+        document.getElementById('npCityInput').value = cityName;
+        document.getElementById('npCitySuggestions').style.display = 'none';
+        selectedCityRef = cityRef;
+
+        // Определяем текущий тип (отделение или поштомат)
+        const currentSubtype = document.querySelector('input[name="np_sub"]:checked').value;
+        if (currentSubtype === 'branch') loadNovaPoshtaWarehouses(cityRef, '1');
+        else if (currentSubtype === 'postomat') loadNovaPoshtaWarehouses(cityRef, '48'); // 48 - тип для поштоматов НП
+    }
+
+    function selectCityPreset(cityName, cityRef) {
+        document.getElementById('npCityInput').value = cityName;
+        document.getElementById('npCitySuggestions').style.display = 'none';
+        selectedCityRef = cityRef;
+
+        const currentSubtype = document.querySelector('input[name="np_sub"]:checked').value;
+        if (currentSubtype === 'branch') loadNovaPoshtaWarehouses(cityRef, '1');
+        else if (currentSubtype === 'postomat') loadNovaPoshtaWarehouses(cityRef, '48');
+    }
+
     function switchNpSubtype() {
         const subtype = document.querySelector('input[name="np_sub"]:checked').value;
         const container = document.getElementById('npDynamicFields');
 
         if (subtype === 'branch') {
             container.innerHTML = `
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-size: 12px; color: #444;">Відділення <span style="color: red;">*</span></label>
-                        <select style="padding: 10px; font-size: 13px;">
-                            <option value="">Виберіть відділення</option>
-                            <option value="1">Відділення №1 (до 30 кг): вул. Промислова, 2</option>
-                            <option value="2">Відділення №2 (до 50 кг): вул. Центральна, 14</option>
-                        </select>
-                    </div>`;
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label id="npTargetLabel" style="font-size: 12px; color: #444;">Відділення <span style="color: red;">*</span></label>
+                    <select id="npTargetSelect" style="padding: 10px; font-size: 13px;">
+                        <option value="">Завантаження відділень...</option>
+                    </select>
+                </div>`;
+            loadNovaPoshtaWarehouses(selectedCityRef, '1');
         } else if (subtype === 'postomat') {
             container.innerHTML = `
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label style="font-size: 12px; color: #444;">Поштомат <span style="color: red;">*</span></label>
-                        <select style="padding: 10px; font-size: 13px;">
-                            <option value="">Виберіть поштомат</option>
-                            <option value="p1">Поштомат №450 (біля АТБ)</option>
-                            <option value="p2">Поштомат №112 (ТЦ Острів)</option>
-                        </select>
-                    </div>`;
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label id="npTargetLabel" style="font-size: 12px; color: #444;">Поштомат <span style="color: red;">*</span></label>
+                    <select id="npTargetSelect" style="padding: 10px; font-size: 13px;">
+                        <option value="">Завантаження поштоматів...</option>
+                    </select>
+                </div>`;
+            loadNovaPoshtaWarehouses(selectedCityRef, '48'); // 48 - поштоматы
         } else if (subtype === 'courier') {
             container.innerHTML = `
-                    <div style="display: flex; gap: 10px;">
-                        <div class="form-group" style="flex: 2; margin-bottom: 0;">
-                            <label style="font-size: 12px; color: #444;">Вулиця <span style="color: red;">*</span></label>
-                            <input type="text" placeholder="Введіть назву вулиці" style="padding: 10px; font-size: 13px;">
-                        </div>
-                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                            <label style="font-size: 12px; color: #444;">Будинок <span style="color: red;">*</span></label>
-                            <input type="text" placeholder="№" style="padding: 10px; font-size: 13px;">
-                        </div>
-                    </div>`;
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                        <label style="font-size: 12px; color: #444;">Вулиця <span style="color: red;">*</span></label>
+                        <input type="text" placeholder="Введіть назву вулиці" style="padding: 10px; font-size: 13px;">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label style="font-size: 12px; color: #444;">Будинок <span style="color: red;">*</span></label>
+                        <input type="text" placeholder="№" style="padding: 10px; font-size: 13px;">
+                    </div>
+                </div>`;
         }
+    }
+
+    function loadNovaPoshtaWarehouses(cityRef, typeOfWarehouseRef) {
+        fetch('https://api.novaposhta.ua/v2.0/json/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                apiKey: "",
+                modelName: "Address",
+                calledMethod: "getWarehouses",
+                methodProperties: {
+                    CityRef: cityRef,
+                    TypeOfWarehouseRef: typeOfWarehouseRef, // '1' для отделений, '48' для почтоматов
+                    Language: "UA"
+                }
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                const selectElem = document.getElementById('npTargetSelect');
+                if (!selectElem) return;
+
+                if (data.success && data.data && data.data.length > 0) {
+                    let optionsHtml = '';
+                    data.data.forEach(wh => {
+                        optionsHtml += `<option value="${wh.Number}">${wh.Description}</option>`;
+                    });
+                    selectElem.innerHTML = optionsHtml;
+                } else {
+                    selectElem.innerHTML = '<option value="">Нічого не знайдено для цього міста</option>';
+                }
+            })
+            .catch(err => {
+                console.log('Помилка завантаження відділень НП:', err);
+                const selectElem = document.getElementById('npTargetSelect');
+                if (selectElem) selectElem.innerHTML = '<option value="">Помилка завантаження</option>';
+            });
     }
 
     function selectPaymentCard(cardElement) {
         document.querySelectorAll('#checkoutOverlay .checkout-step:nth-last-child(1) .option-card').forEach(c => c.classList.remove('active-option-card'));
         cardElement.classList.add('active-option-card');
         cardElement.querySelector('input[type="radio"]').checked = true;
-    }
-
-    function setCity(cityName) {
-        document.getElementById('npCityInput').value = cityName;
     }
 
     function submitFinalOrder() {
