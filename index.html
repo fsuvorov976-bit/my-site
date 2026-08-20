@@ -17,11 +17,9 @@
             padding: 8px 40px;
         }
         .top-bar a.hidden-cabinet {
-            color: #333;
-            text-decoration: none;
-            background-color: #333;
-            user-select: none;
-            cursor: default;
+            color: #fff;
+            text-decoration: underline;
+            cursor: pointer;
         }
 
         .header {
@@ -255,8 +253,8 @@
     function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
 
     function checkAdminLogin() {
-        const user = document.getElementById('adminUser'].value.trim();
-        const pass = document.getElementById('adminPass'].value.trim();
+        const user = document.getElementById('adminUser').value.trim();
+        const pass = document.getElementById('adminPass').value.trim();
 
         if (user === 'fsuvorov976@gmail.com' && pass === '0631023827Aa') {
             alert('Успішно! Вітаємо, ви увійшли як адміністратор.');
@@ -348,7 +346,7 @@
         document.getElementById('catalog').style.display = 'flex';
     }
 
-    // ВІДПРАВКА ЗАМОВЛЕННЯ В TELEGRAM (Ваш токен та ID вже налаштовані)
+    // ВІДПРАВКА ЗАМОВЛЕННЯ В TELEGRAM
     function submitOrderToTelegram() {
         const name = document.getElementById('orderName').value.trim();
         const phone = document.getElementById('orderPhone').value.trim();
