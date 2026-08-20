@@ -1,24 +1,140 @@
-const products = [
-{ name: "Засіб для видалення вапняного нальоту GEBERIT", price: "582 ₴", status: "В наявності" },
-{ name: "Картридж керамічний Ø 46 мм Dornbracht", price: "5 880 ₴", status: "В наявності" },
-{ name: "Кран-букса керамічна Blanco FONTAS-S", price: "1 895 ₴", status: "В наявності" },
-{ name: "Зливний механізм A2 для інсталяції TECE", price: "2 990 ₴", status: "В наявності" }
-];
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Nikita Shop - Запчастини</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background-color: #f7f9fa; color: #333; padding: 20px; }
 
-const container = document.getElementById('product-list');
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: #fff; padding: 15px 25px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .logo { font-weight: bold; font-size: 20px; color: #003366; }
+        .cart-btn { background: #0099ff; color: white; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-products.forEach(p => {
-container.innerHTML += `
-<div class="product-card">
-    <div>
-        <div style="background:#eee; height:130px; display:flex; align-items:center; justify-content:center; color:#88; margin-bottom:10px;">Фото товару</div>
-        <div class="product-status">✔ ${p.status}</div>
-        <div class="product-title">${p.name}</div>
-    </div>
-    <div>
-        <div class="product-price">${p.price}</div>
-        <button class="buy-btn">Купити</button>
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .product-card { background: #fff; border: 1px solid #e1e4e8; padding: 15px; border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between; }
+        .product-status { font-size: 12px; color: #2e7d32; margin-bottom: 8px; font-weight: bold; }
+        .product-title { font-size: 13px; margin-bottom: 12px; color: #222; height: 36px; overflow: hidden; }
+        .product-price { font-size: 18px; font-weight: 800; color: #b12704; margin-bottom: 10px; }
+        .buy-btn { background-color: #ffa41c; border: 1px solid #ff8f00; padding: 10px; width: 100%; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        .buy-btn:hover { background-color: #fa9500; }
+
+        /* Модальное окно кошика */
+        .cart-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: flex-end; z-index: 1000; }
+        .cart-modal { width: 380px; background: white; height: 100%; padding: 20px; display: flex; flex-direction: column; }
+        .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; font-size: 18px; color: #003366; }
+        .close-btn { cursor: pointer; border: none; background: none; font-size: 18px; }
+        .cart-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin: 15px 0; border-top: 1px solid #ddd; padding-top: 15px; }
+        .checkout-btn { background: #0099ff; color: white; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: center; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">NIKITA SHOP</div>
+    <button class="cart-btn" onclick="openCart()">🛒 Кошик (<span id="cartCount">0</span>)</button>
+</header>
+
+<div class="product-grid" id="product-list"></div>
+
+<!-- Оверлей кошика -->
+<div class="cart-overlay" id="cartOverlay">
+    <div class="cart-modal">
+        <div class="cart-header">
+            <span>Ваш кошик</span>
+            <button class="close-btn" onclick="closeCart()">✕</button>
+        </div>
+        <div id="cartItemsContainer" style="flex-grow: 1; overflow-y: auto;">
+            <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">Кошик порожній</p>
+        </div>
+        <div>
+            <div class="cart-total">
+                <span>Разом:</span>
+                <span id="cartTotalPrice">0 ₴</span>
+            </div>
+            <button class="checkout-btn" onclick="checkout()">Оформити замовлення</button>
+        </div>
     </div>
 </div>
-`;
-});
+
+<script>
+    const products = [
+        { name: "Засіб для видалення вапняного нальоту GEBERIT", price: 582, priceStr: "582 ₴", status: "В наявності" },
+        { name: "Картридж керамічний Ø 46 мм Dornbracht", price: 5880, priceStr: "5 880 ₴", status: "В наявності" },
+        { name: "Кран-букса керамічна Blanco FONTAS-S", price: 1895, priceStr: "1 895 ₴", status: "В наявності" },
+        { name: "Зливний механізм A2 для інсталяції TECE", price: 2990, priceStr: "2 990 ₴", status: "В наявності" }
+    ];
+
+    let cart = [];
+    const container = document.getElementById('product-list');
+
+    // Рендер товаров на странице
+    products.forEach((p, index) => {
+        container.innerHTML += `
+        <div class="product-card">
+            <div>
+                <div style="background:#eee; height:130px; display:flex; align-items:center; justify-content:center; color:#888; margin-bottom:10px;">Фото товару</div>
+                <div class="product-status">✔ ${p.status}</div>
+                <div class="product-title">${p.name}</div>
+            </div>
+            <div>
+                <div class="product-price">${p.priceStr}</div>
+                <button class="buy-btn" onclick="addToCart(${index})">Купити</button>
+            </div>
+        </div>
+        `;
+    });
+
+    function addToCart(index) {
+        const product = products[index];
+        cart.push(product);
+        updateCartUI();
+        openCart();
+    }
+
+    function updateCartUI() {
+        document.getElementById('cartCount').innerText = cart.length;
+        const container = document.getElementById('cartItemsContainer');
+
+        if (cart.length === 0) {
+            container.innerHTML = '<p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">Кошик порожній</p>';
+            document.getElementById('cartTotalPrice').innerText = '0 ₴';
+            return;
+        }
+
+        let html = '';
+        let total = 0;
+
+        cart.forEach(item => {
+            total += item.price;
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; font-size: 13px;">
+                    <span>${item.name}</span>
+                    <strong style="color: #b12704; white-space: nowrap;">${item.priceStr}</strong>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        document.getElementById('cartTotalPrice').innerText = total.toLocaleString() + ' ₴';
+    }
+
+    function openCart() {
+        document.getElementById('cartOverlay').style.display = 'flex';
+    }
+
+    function closeCart() {
+        document.getElementById('cartOverlay').style.display = 'none';
+    }
+
+    function checkout() {
+        if (cart.length === 0) return;
+        alert('Дякуємо! Ваше замовлення успішно оформлено.');
+        cart = [];
+        updateCartUI();
+        closeCart();
+    }
+</script>
+
+</body>
+</html>
