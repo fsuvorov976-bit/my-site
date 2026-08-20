@@ -340,7 +340,7 @@
                                 <div id="npCitySuggestions" class="suggestions-list"></div>
                             </div>
                             <div style="display: flex; gap: 15px; font-size: 12px; margin-bottom: 12px;" onclick="event.stopPropagation()">
-                                <a href="#" onclick="selectCityPreset('м. Київ, Київська обл.', 'db5c88f5-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Київ</a>
+                                <a href="#" onclick="selectCityPreset('Київ', '8d5a980d-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Київ</a>
                                 <a href="#" onclick="selectCityPreset('Одеса', 'db5c88f5-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Одеса</a>
                                 <a href="#" onclick="selectCityPreset('Дніпро', 'db5c88f0-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Дніпро</a>
                                 <a href="#" onclick="selectCityPreset('Харків', 'db5c88de-391c-11dd-90d9-001a92567626'); return false;" style="color: #0089ff; text-decoration: none;">Харків</a>
@@ -422,10 +422,10 @@
     let allProducts = [];
     let cart = [];
     let isAdminLoggedIn = false;
-    let selectedCityRef = 'db5c8890-391c-11dd-90d9-001a92567626'; // Київ за замовчуванням
+    let selectedCityRef = '8d5a980d-391c-11dd-90d9-001a92567626'; // Коректний CityRef для Києва
     let cachedWarehouses = [];
 
-    // Вставте сюди ваш дійсний ключ API Нової Пошти, якщо потрібно реальні дані відділень:
+    // Вставте сюди ваш дійсний ключ API Нової Пошти:
     const NP_API_KEY = "";
 
     window.onload = function() {
@@ -435,7 +435,7 @@
             document.getElementById('adminPanel').style.display = 'block';
             document.getElementById('cabinetLink').innerText = 'Вийти (Адмін)';
         }
-        loadNovaPoshtaWarehouses(selectedCityRef);
+        selectCityPreset('Київ', '8d5a980d-391c-11dd-90d9-001a92567626');
     };
 
     function loadProductsFromServer() {
