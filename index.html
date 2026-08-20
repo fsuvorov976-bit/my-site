@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Авторизований сервіс - Alter-shop</title>
+    <title>Nikita Shop - Авторизований сервіс</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
         body { background-color: #f4f4f4; color: #333; }
@@ -83,28 +83,24 @@
 <body>
 
 <div class="top-bar">
-    <div>UA | RU &nbsp;&nbsp;&nbsp; 📞 +380 (50) 598-85-63</div>
+    <div>UA &nbsp;&nbsp;&nbsp; 📞 +380 (97) 431-82-19</div>
     <div class="cabinet-wrapper"><a href="#" class="hidden-cabinet" onclick="openLoginModal(event)">Кабінет</a></div>
 </div>
 
 <header class="header">
     <div class="logo-area">
-        <div class="logo-text">ALTER SHOP</div>
+        <div class="logo-text">NIKITA SHOP</div>
         <div class="logo-sub">Авторизований сервіс</div>
     </div>
     <div class="search-box">
-        <input type="text" placeholder="Пошук запчастин...">
-        <button>🔍</button>
+        <input type="text" id="searchInput" placeholder="Пошук запчастин..." oninput="filterProducts()">
+        <button onclick="filterProducts()">🔍</button>
     </div>
     <button class="cart-btn" id="cartBtn" onclick="openCart()">🛒 Кошик (0)</button>
 </header>
 
 <nav class="nav-menu">
-    <a onclick="switchTab('home', event)">Головна</a>
     <a class="active" onclick="switchTab('catalog', event)">Товари та послуги</a>
-    <a onclick="switchTab('about', event)">Про нас</a>
-    <a onclick="switchTab('contacts', event)">Контакти</a>
-    <a onclick="switchTab('delivery', event)">Доставка та оплата</a>
 </nav>
 
 <!-- КАТАЛОГ -->
@@ -113,26 +109,24 @@
         <aside>
             <h3>Фільтри</h3>
             <div style="margin-bottom: 20px;">
-                <h4 style="font-size: 14px; margin-bottom: 8px;">Ціна</h4>
+                <h4 style="font-size: 14px; margin-bottom: 8px;">Ціна (₴)</h4>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="text" placeholder="від 1" style="width: 45%; padding: 6px; border: 1px solid #ccc;"><span>-</span>
-                    <input type="text" placeholder="до 30255" style="width: 45%; padding: 6px; border: 1px solid #ccc;">
+                    <input type="number" id="priceMin" placeholder="від" oninput="filterProducts()" style="width: 45%; padding: 6px; border: 1px solid #ccc;"><span>-</span>
+                    <input type="number" id="priceMax" placeholder="до" oninput="filterProducts()" style="width: 45%; padding: 6px; border: 1px solid #ccc;">
                 </div>
             </div>
         </aside>
 
         <div class="content-area">
             <div class="admin-panel" id="adminPanel">
-                <h3 style="color: #0d47a1; margin-bottom: 10px;">👑 Панель адміністратора (Серверний режим)</h3>
-                <p style="font-size: 13px; margin-bottom: 10px;">Завантажте Excel-файл — зміни збережуться на сервері для всіх користувачів</p>
+                <h3 style="color: #0d47a1; margin-bottom: 10px;">👑 Панель адміністратора</h3>
+                <p style="font-size: 13px; margin-bottom: 10px;">Завантажте Excel-файл — товари збережуться на сервері для всіх</p>
                 <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 10px; background: white; padding: 5px; width: 100%;">
                 <button onclick="uploadExcelToServer()" style="background: #0099ff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Оновити товари на сервері</button>
             </div>
 
             <div class="banner">ЛУЧШИЙ ВЫБОР ЗАПЧАСТЕЙ К СМЕСИТЕЛЯМ</div>
-            <div class="product-grid" id="productGrid">
-                <!-- Сюди завантажуватимуться товари з сервера -->
-            </div>
+            <div class="product-grid" id="productGrid"></div>
         </div>
     </div>
 </div>
@@ -148,7 +142,7 @@
     </div>
 </div>
 
-<!-- ВИПАДНИЙ КОШИК -->
+<!-- КОШИК -->
 <div class="cart-overlay" id="cartOverlay">
     <div class="cart-modal">
         <div class="cart-header">
@@ -164,9 +158,9 @@
 </div>
 
 <script>
+    let allProducts = [];
     let cart = [];
 
-    // При завантаженні сторінки отримуємо товари із сервера
     window.onload = function() {
         loadProductsFromServer();
     };
@@ -175,7 +169,8 @@
         fetch('/api/products')
             .then(response => response.json())
             .then(products => {
-                renderProducts(products);
+                allProducts = products;
+                renderProducts(allProducts);
             })
             .catch(error => console.log('Помилка завантаження товарів:', error));
     }
@@ -185,7 +180,7 @@
         productGrid.innerHTML = '';
 
         if (products.length === 0) {
-            productGrid.innerHTML = '<p>Товари поки не завантажені.</p>';
+            productGrid.innerHTML = '<p>Товарів не знайдено.</p>';
             return;
         }
 
@@ -207,6 +202,20 @@
         });
     }
 
+    function filterProducts() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
+        const minPrice = parseFloat(document.getElementById('priceMin').value) || 0;
+        const maxPrice = parseFloat(document.getElementById('priceMax').value) || Infinity;
+
+        const filtered = allProducts.filter(item => {
+            const matchesSearch = item.title.toLowerCase().includes(searchText);
+            const matchesPrice = item.price >= minPrice && item.price <= maxPrice;
+            return matchesSearch && matchesPrice;
+        });
+
+        renderProducts(filtered);
+    }
+
     function uploadExcelToServer() {
         const fileInput = document.getElementById('excelFile');
         if (fileInput.files.length === 0) { alert('Оберіть Excel-файл!'); return; }
@@ -221,8 +230,8 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(`Успішно оновлено товарів: ${data.count}! Зімітовано збереження для всіх користувачів.`);
-                    loadProductsFromServer(); // Перезавантажуємо каталог
+                    alert(`Успішно оновлено товарів: ${data.count}!`);
+                    loadProductsFromServer();
                 } else {
                     alert('Помилка завантаження');
                 }
@@ -236,8 +245,6 @@
     function switchTab(tabId, event) {
         document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active-section'));
         document.getElementById(tabId).classList.add('active-section');
-        document.querySelectorAll('.nav-menu a').forEach(a => a.classList.remove('active'));
-        if (event) event.target.classList.add('active');
     }
 
     function openLoginModal(e) { e.preventDefault(); document.getElementById('loginModal').style.display = 'flex'; }

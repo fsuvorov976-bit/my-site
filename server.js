@@ -8,11 +8,10 @@ const app = express();
 const upload = multer({ dest: 'uploads/' });
 
 app.use(express.json());
-app.use(express.static(__dirname)); // Роздає статичні файли сайту
+app.use(express.static(__dirname));
 
 const DATA_FILE = path.join(__dirname, 'products.json');
 
-// Ендпоинт для отримання товарів усіма користувачами
 app.get('/api/products', (req, res) => {
     if (fs.existsSync(DATA_FILE)) {
         const data = fs.readFileSync(DATA_FILE, 'utf8');
@@ -22,7 +21,6 @@ app.get('/api/products', (req, res) => {
     }
 });
 
-// Ендпоинт для завантаження Excel адміністратором
 app.post('/api/upload', upload.single('excelFile'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'Файл не завантажено' });
@@ -33,10 +31,9 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonRows = xlsx.utils.sheet_to_json(worksheet);
 
-        // Обробляємо та витягуємо потрібні поля
-        const products = jsonRows.map(row => {
+        const products = jsonRows.map((row, index) => {
             const title = row['Название_позиции'] || row['Название_позиции_укр'] || row['Назва'] || row['Title'] || 'Без назви';
-            const price = row['Цена'] || row['Цена_от'] || row['Ціна'] || row['Price'] || 0;
+            const price = parseFloat(row['Цена'] || row['Цена_от'] || row['Ціна'] || row['Price'] || 0);
             const imgUrl = row['Ссылка_изображения'] || row['Изображение'] || row['Фото'] || row['Image'] || '';
 
             let firstImg = '';
@@ -44,13 +41,10 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
                 firstImg = imgUrl.toString().split(',')[0].trim();
             }
 
-            return { title, price, image: firstImg };
+            return { id: index + 1, title, price, image: firstImg };
         });
 
-        // Зберігаємо у файл-базу на сервері
         fs.writeFileSync(DATA_FILE, JSON.stringify(products, null, 2));
-
-        // Видаляємо тимчасовий завантажений файл
         fs.unlinkSync(req.file.path);
 
         res.json({ success: true, count: products.length });
@@ -62,5 +56,5 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Сервер запущено на порту ${PORT}`);
+    console.log(`Сервер запущено! Відкрийте: http://localhost:${PORT}`);
 });
