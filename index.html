@@ -57,7 +57,6 @@
             background: linear-gradient(135deg, #002244 0%, #004080 100%);
             color: white; padding: 30px; text-align: center; font-size: 22px; font-weight: bold;
             margin-bottom: 25px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            letter-spacing: 0.5px;
         }
 
         .top-brands-showcase {
@@ -136,10 +135,10 @@
         .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #dcdfe6; border-radius: 6px; font-size: 14px; outline: none; transition: border 0.2s; }
         .form-group input:focus { border-color: #0089ff; }
 
+        /* PROM STYLE ACTIVE CARD */
         .option-card { border: 1px solid #dcdfe6; border-radius: 8px; padding: 15px; margin-bottom: 10px; cursor: pointer; display: flex; align-items: flex-start; gap: 12px; transition: border 0.2s; }
-        .option-card input { margin-top: 3px; accent-color: #0089ff; }
-        .option-card:hover { border-color: #0089ff; }
-        .option-details { font-size: 13px; color: #666; line-height: 1.5; margin-top: 5px; }
+        .option-card input[type="radio"] { margin-top: 3px; accent-color: #0089ff; }
+        .option-card.active-option-card { border: 2px solid #ffcc00; }
 
         .sidebar-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; }
         .sidebar-product-list { max-height: 220px; overflow-y: auto; margin-bottom: 15px; border-bottom: 1px solid #e1e4e8; padding-bottom: 10px; }
@@ -210,20 +209,20 @@
         <div class="content-area">
 
             <div class="admin-panel" id="adminPanel">
-                <h3 style="color: #0d47a1; margin-bottom: 10px;">👑 Панель адміністратора (Пакетне керування)</h3>
-                <p style="font-size: 13px; margin-bottom: 10px;">Позначте галочками товари в сітці нижче та змініть їхній статус кількома кліками:</p>
+                <h3 style="color: #0d47a1; margin-bottom: 10px;">👑 Панель адміністратора</h3>
+                <p style="font-size: 13px; margin-bottom: 10px;">Позначте товари галочками в сітці нижче та змініть їхній статус:</p>
 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: center;">
                     <button onclick="setBatchStock(true)" style="background: #2e7d32; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">✓ Зробити вибрані В наявності</button>
                     <button onclick="setBatchStock(false)" style="background: #c62828; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">✕ Зробити вибрані Відсутніми</button>
-                    <button onclick="selectAllVisible()" style="background: #003366; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 12px;">Вибрати всі на сторінці</button>
+                    <button onclick="selectAllVisible()" style="background: #003366; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 12px;">Вибрати всі</button>
                     <button onclick="clearSelection()" style="background: #777; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 12px;">Зняти виділення</button>
                 </div>
 
                 <div style="border-top: 1px solid #b0bec5; padding-top: 10px;">
-                    <span style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 5px;">Завантажити новий Excel-файл:</span>
+                    <span style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 5px;">Завантажити Excel-файл:</span>
                     <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="margin-bottom: 8px; background: white; padding: 5px; width: 100%; border: 1px solid #ccc; border-radius: 4px;">
-                    <button onclick="uploadExcelToServer()" style="background: #0099ff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Оновити товари з Excel</button>
+                    <button onclick="uploadExcelToServer()" style="background: #0099ff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Оновити товари</button>
                 </div>
             </div>
 
@@ -288,11 +287,11 @@
                     <div style="display: flex; gap: 15px;">
                         <div class="form-group" style="flex: 1;">
                             <label>Прізвище *</label>
-                            <input type="text" id="orderLastName" placeholder="Введіть прізвище">
+                            <input type="text" id="orderLastName" placeholder="Введіть прізвище кирилицею">
                         </div>
                         <div class="form-group" style="flex: 1;">
                             <label>Ім'я *</label>
-                            <input type="text" id="orderFirstName" placeholder="Введіть ім'я">
+                            <input type="text" id="orderFirstName" placeholder="Введіть ім'я кирилицею">
                         </div>
                     </div>
                     <div class="form-group">
@@ -305,60 +304,91 @@
                 <div class="checkout-step">
                     <div class="step-header">
                         <div class="step-number">2</div>
-                        <span>Доставка</span>
+                        <span>Доставка <span style="color: red;">*</span></span>
                     </div>
 
-                    <label class="option-card">
-                        <input type="radio" name="delivery" checked>
-                        <div>
-                            <strong>Нова Пошта</strong>
-                            <div class="option-details">
-                                • У межах населеного пункту — від 70 ₴<br>
-                                • По Україні — від 80 ₴<br>
-                                Доплата за отримання у поштоматі — +10 ₴
+                    <!-- Нова Пошта (Exact match to screenshot) -->
+                    <div class="option-card active-option-card" id="npCard" onclick="selectDeliveryType('np')">
+                        <input type="radio" name="delivery" id="npRadio" checked>
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <strong style="color: #003366; display: flex; align-items: center; gap: 6px;">
+                                    <span style="color: #ed1c24; font-size: 16px;">⛟</span> Нова Пошта
+                                </strong>
+                                <span style="color: #666; font-size: 13px;">від 70 ₴</span>
+                            </div>
+                            <div style="margin-top: 4px;">
+                                <a href="#" onclick="alert('Детальні тарифні умови Нової Пошти'); event.stopPropagation();" style="color: #0089ff; font-size: 12px; text-decoration: none;">Умови доставки</a>
+                            </div>
+
+                            <!-- Internal NP Suboptions -->
+                            <div style="display: flex; gap: 20px; margin-top: 15px; font-size: 13px;" onclick="event.stopPropagation()">
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                    <input type="radio" name="np_sub" checked style="accent-color: #0089ff;"> У відділення
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                    <input type="radio" name="np_sub" style="accent-color: #0089ff;"> У поштомат
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                    <input type="radio" name="np_sub" style="accent-color: #0089ff;"> Кур'єром
+                                </label>
+                            </div>
+
+                            <!-- City Input & Quick Selectors -->
+                            <div class="form-group" style="margin-top: 15px; margin-bottom: 5px;" onclick="event.stopPropagation()">
+                                <label style="font-size: 12px; color: #441;">Населений пункт <span style="color: red;">*</span></label>
+                                <input type="text" id="npCityInput" placeholder="Вкажіть населений пункт" style="padding: 10px; font-size: 13px;">
+                            </div>
+                            <div style="display: flex; gap: 15px; font-size: 12px;" onclick="event.stopPropagation()">
+                                <a href="#" onclick="setCity('Київ'); return false;" style="color: #0089ff; text-decoration: none;">Київ</a>
+                                <a href="#" onclick="setCity('Одеса'); return false;" style="color: #0089ff; text-decoration: none;">Одеса</a>
+                                <a href="#" onclick="setCity('Дніпро'); return false;" style="color: #0089ff; text-decoration: none;">Дніпро</a>
+                                <a href="#" onclick="setCity('Харків'); return false;" style="color: #0089ff; text-decoration: none;">Харків</a>
+                                <a href="#" onclick="setCity('Львів'); return false;" style="color: #0089ff; text-decoration: none;">Львів</a>
                             </div>
                         </div>
-                    </label>
+                    </div>
 
-                    <label class="option-card">
-                        <input type="radio" name="delivery">
+                    <!-- Самовивіз -->
+                    <div class="option-card" id="pickupCard" onclick="selectDeliveryType('pickup')" style="margin-top: 10px;">
+                        <input type="radio" name="delivery" id="pickupRadio">
                         <div>
-                            <strong>Самовивіз</strong>
-                            <div class="option-details">Безкоштовно з нашого магазину-складу.</div>
+                            <strong style="color: #333;">Самовивіз</strong>
+                            <div style="font-size: 12px; color: #666; margin-top: 2px;">Безкоштовно з нашого магазину.</div>
                         </div>
-                    </label>
+                    </div>
                 </div>
 
                 <!-- Step 3: Оплата -->
                 <div class="checkout-step">
                     <div class="step-header">
                         <div class="step-number">3</div>
-                        <span>Оплата</span>
+                        <span>Оплата <span style="color: red;">*</span></span>
                     </div>
 
-                    <label class="option-card">
+                    <div class="option-card active-option-card" onclick="selectPaymentCard(this)">
                         <input type="radio" name="payment" checked>
                         <div>
-                            <strong>Безпечна оплата карткою (ПромОплата)</strong>
-                            <div class="option-details">Промінфо гарантує безпеку. Повернемо гроші при відмові від посилки.</div>
+                            <strong>Безпечна оплата карткою (промОплата)</strong>
+                            <div style="font-size: 12px; color: #666; margin-top: 3px;">Пром гарантує безпеку. Повернемо гроші при відмові від посилки.</div>
                         </div>
-                    </label>
+                    </div>
 
-                    <label class="option-card">
+                    <div class="option-card" onclick="selectPaymentCard(this)">
                         <input type="radio" name="payment">
                         <div>
                             <strong>Післяплата</strong>
-                            <div class="option-details">Оплата при отриманні на пошті.</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 3px;">Оплата при отриманні.</div>
                         </div>
-                    </label>
+                    </div>
 
-                    <label class="option-card">
+                    <div class="option-card" onclick="selectPaymentCard(this)">
                         <input type="radio" name="payment">
                         <div>
-                            <strong>Оплата на рахунок (IBAN)</strong>
-                            <div class="option-details" style="font-family: monospace; color: #003366; font-weight: bold;">UA263052990000026007000104355</div>
+                            <strong>Оплата на рахунок</strong>
+                            <div style="font-size: 12px; font-family: monospace; color: #003366; font-weight: bold; margin-top: 3px;">UA263052990000026007000104355</div>
                         </div>
-                    </label>
+                    </div>
                 </div>
 
             </div>
@@ -369,16 +399,14 @@
                     <span>Замовлення</span>
                     <span id="sidebarCount" style="font-size: 13px; color: #666; font-weight: normal;">0 товарів</span>
                 </div>
-                <div class="sidebar-product-list" id="sidebarProductList">
-                    <!-- Items rendered dynamically -->
-                </div>
+                <div class="sidebar-product-list" id="sidebarProductList"></div>
                 <div class="sidebar-total-row">
                     <span>До сплати:</span>
                     <span id="sidebarTotalPrice" style="color: #b12704;">0 ₴</span>
                 </div>
                 <button class="place-order-btn" onclick="submitFinalOrder()">Оформити замовлення</button>
                 <div style="font-size: 11px; color: #888; text-align: center; margin-top: 12px; line-height: 1.4;">
-                    Натискаючи кнопку, ви погоджуєтеся з умовами обробки даних.
+                    Натискаючи кнопку, ви погоджуєтеся з Угодою користувача.
                 </div>
             </div>
         </div>
@@ -518,29 +546,17 @@
         renderProducts(filtered);
     }
 
-    function selectAllVisible() {
-        document.querySelectorAll('.batch-checkbox').forEach(cb => cb.checked = true);
-    }
-
-    function clearSelection() {
-        document.querySelectorAll('.batch-checkbox').forEach(cb => cb.checked = false);
-    }
+    function selectAllVisible() { document.querySelectorAll('.batch-checkbox').forEach(cb => cb.checked = true); }
+    function clearSelection() { document.querySelectorAll('.batch-checkbox').forEach(cb => cb.checked = false); }
 
     function setBatchStock(status) {
         const checkedBoxes = document.querySelectorAll('.batch-checkbox:checked');
-        if (checkedBoxes.length === 0) {
-            alert('Будь ласка, позначте галочками хоча б кілька товарів у сітці каталогу!');
-            return;
-        }
-
+        if (checkedBoxes.length === 0) { alert('Позначте товари в сітці каталогу!'); return; }
         checkedBoxes.forEach(cb => {
             const title = cb.getAttribute('data-title');
             const product = allProducts.find(p => p.title === title);
-            if (product) {
-                product.inStock = status;
-            }
+            if (product) product.inStock = status;
         });
-
         saveStockStateToStorage();
         filterProducts();
         alert(`Успішно оновлено статус для ${checkedBoxes.length} товарів!`);
@@ -548,30 +564,21 @@
 
     function saveStockStateToStorage() {
         let stockState = {};
-        allProducts.forEach(p => {
-            stockState[p.title] = p.inStock;
-        });
+        allProducts.forEach(p => { stockState[p.title] = p.inStock; });
         localStorage.setItem('products_stock_state', JSON.stringify(stockState));
     }
 
     function uploadExcelToServer() {
         const fileInput = document.getElementById('excelFile');
         if (fileInput.files.length === 0) { alert('Оберіть Excel-файл!'); return; }
-
         const formData = new FormData();
         formData.append('excelFile', fileInput.files[0]);
-
         fetch('/api/upload', { method: 'POST', body: formData })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    alert(`Успішно оновлено товарів: ${data.count}!`);
-                    loadProductsFromServer();
-                } else {
-                    alert('Помилка завантаження');
-                }
-            })
-            .catch(error => { alert('Помилка сервера'); console.error(error); });
+                if (data.success) { alert('Товари оновлено!'); loadProductsFromServer(); }
+                else alert('Помилка завантаження');
+            });
     }
 
     function switchTab(tabId, event) {
@@ -582,7 +589,7 @@
     function handleCabinetClick(e) {
         e.preventDefault();
         if (isAdminLoggedIn) {
-            if (confirm('Бажаєте вийти з режиму адміністратора?')) {
+            if (confirm('Вийти з адмін-панелі?')) {
                 isAdminLoggedIn = false;
                 localStorage.removeItem('admin_logged');
                 document.getElementById('adminPanel').style.display = 'none';
@@ -600,7 +607,6 @@
         const user = document.getElementById('adminUser').value.trim();
         const pass = document.getElementById('adminPass').value.trim();
         if (user === 'fsuvorov976@gmail.com' && pass === '0631023827Aa') {
-            alert('Успішно! Ви увійшли як адміністратор.');
             isAdminLoggedIn = true;
             localStorage.setItem('admin_logged', 'true');
             closeLoginModal();
@@ -621,23 +627,18 @@
     function updateCartUI() {
         document.getElementById('cartBtn').innerText = `🛒 Кошик (${cart.length})`;
         const container = document.getElementById('cartItemsContainer');
-
         if (cart.length === 0) {
             container.innerHTML = '<p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">Кошик порожній</p>';
             document.getElementById('cartTotalPrice').innerText = '0 ₴';
             return;
         }
-
-        let html = '';
-        let total = 0;
-        cart.forEach((item) => {
+        let html = '', total = 0;
+        cart.forEach(item => {
             total += item.price;
-            html += `
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; font-size: 13px;">
-                        <span style="max-width: 250px;">${item.title}</span>
-                        <span style="font-weight: bold; color: #b12704;">${item.price} ₴</span>
-                    </div>
-                `;
+            html += `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; font-size: 13px;">
+                    <span style="max-width: 250px;">${item.title}</span>
+                    <span style="font-weight: bold; color: #b12704;">${item.price} ₴</span>
+                </div>`;
         });
         container.innerHTML = html;
         document.getElementById('cartTotalPrice').innerText = total + ' ₴';
@@ -647,33 +648,42 @@
     function closeCart() { document.getElementById('cartOverlay').style.display = 'none'; }
 
     function openCheckout() {
-        if (cart.length === 0) {
-            alert('Кошик порожній!');
-            return;
-        }
+        if (cart.length === 0) { alert('Кошик порожній!'); return; }
         closeCart();
-
-        // Populate sidebar summary
         document.getElementById('sidebarCount').innerText = `${cart.length} товар(ів)`;
-        let listHtml = '';
-        let total = 0;
+        let listHtml = '', total = 0;
         cart.forEach(item => {
             total += item.price;
-            listHtml += `
-                    <div class="sidebar-item">
-                        <span>${item.title}</span>
-                        <strong style="color: #b12704; white-space: nowrap;">${item.price} ₴</strong>
-                    </div>
-                `;
+            listHtml += `<div class="sidebar-item"><span>${item.title}</span><strong style="color: #b12704; white-space: nowrap;">${item.price} ₴</strong></div>`;
         });
         document.getElementById('sidebarProductList').innerHTML = listHtml;
         document.getElementById('sidebarTotalPrice').innerText = total + ' ₴';
-
         document.getElementById('checkoutOverlay').style.display = 'block';
     }
 
-    function closeCheckout() {
-        document.getElementById('checkoutOverlay').style.display = 'none';
+    function closeCheckout() { document.getElementById('checkoutOverlay').style.display = 'none'; }
+
+    function selectDeliveryType(type) {
+        document.getElementById('npCard').classList.remove('active-option-card');
+        document.getElementById('pickupCard').classList.remove('active-option-card');
+
+        if (type === 'np') {
+            document.getElementById('npCard').classList.add('active-option-card');
+            document.getElementById('npRadio').checked = true;
+        } else {
+            document.getElementById('pickupCard').classList.add('active-option-card');
+            document.getElementById('pickupRadio').checked = true;
+        }
+    }
+
+    function selectPaymentCard(cardElement) {
+        document.querySelectorAll('#checkoutOverlay .checkout-step:nth-child(3) .option-card').forEach(c => c.classList.remove('active-option-card'));
+        cardElement.classList.add('active-option-card');
+        cardElement.querySelector('input[type="radio"]').checked = true;
+    }
+
+    function setCity(cityName) {
+        document.getElementById('npCityInput').value = cityName;
     }
 
     function submitFinalOrder() {
@@ -682,11 +692,11 @@
         const phone = document.getElementById('orderPhone').value.trim();
 
         if (!lastName || !firstName || !phone) {
-            alert('Будь ласка, заповніть обов’язкові контактні дані (Прізвище, Ім’я та Телефон)!');
+            alert('Будь ласка, заповніть контактні дані (Прізвище, Ім’я та Телефон)!');
             return;
         }
 
-        alert(`Дякуємо за замовлення, ${firstName} ${lastName}! Наш менеджер зателефонує вам на номер ${phone} найближчим часом.`);
+        alert(`Дякуємо за замовлення, ${firstName} ${lastName}! Менеджер зв'яжеться з вами.`);
         cart = [];
         updateCartUI();
         closeCheckout();
