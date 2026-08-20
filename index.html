@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Авторизований сервіс - Alter-shop</title>
-    <!-- Підключаємо бібліотеку для читання Excel прямо в браузері -->
+    <!-- Підключаємо бібліотеку для читання Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
@@ -18,7 +18,6 @@
             justify-content: space-between;
             padding: 8px 40px;
         }
-        /* Кнопка Кабінету замаскована під фон */
         .top-bar a.hidden-cabinet {
             color: #333;
             text-decoration: none;
@@ -76,7 +75,6 @@
         .filter-group h4 { font-size: 14px; margin-bottom: 8px; }
         .price-inputs { display: flex; gap: 10px; align-items: center; }
         .price-inputs input { width: 45%; padding: 6px; border: 1px solid #ccc; }
-        .checkbox-label { display: block; font-size: 13px; margin-bottom: 6px; cursor: pointer; }
 
         .content-area { flex-grow: 1; }
         .banner { background: linear-gradient(135deg, #ddd 0%, #fff 100%); border: 1px solid #ccc; padding: 40px; text-align: center; font-size: 24px; font-weight: bold; color: #003366; margin-bottom: 20px; border-radius: 4px; }
@@ -105,16 +103,24 @@
         .modal-box input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; }
         .modal-box button { width: 100%; padding: 10px; background: #003366; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
+        /* Випадний кошик */
         .cart-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: flex-end; z-index: 1000; }
         .cart-modal { width: 420px; background: white; height: 100%; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         .cart-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; font-size: 18px; font-weight: bold; }
         .close-btn { cursor: pointer; font-size: 20px; border: none; background: none; }
-        .checkout-main-btn { background: #0099ff; color: white; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: center; margin-top: 15px; }
+
+        .cart-item { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; font-size: 13px; gap: 10px; }
+        .cart-item-controls { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+        .cart-item-controls button { width: 22px; height: 22px; background: #0099ff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .remove-item { color: #d9534f; cursor: pointer; border: none; background: none; font-size: 16px; }
+
+        .cart-total-area { margin-top: auto; border-top: 1px solid #ddd; padding-top: 15px; }
+        .cart-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 15px; }
+        .checkout-main-btn { background: #0099ff; color: white; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: center; }
     </style>
 </head>
 <body>
 
-<!-- Верхня панель з прихованою кнопкою -->
 <div class="top-bar">
     <div>UA | RU &nbsp;&nbsp;&nbsp; 📞 +380 (50) 598-85-63</div>
     <div>
@@ -122,7 +128,6 @@
     </div>
 </div>
 
-<!-- Шапка -->
 <header class="header">
     <div class="logo-area">
         <div class="logo-text">ALTER SHOP</div>
@@ -132,10 +137,9 @@
         <input type="text" placeholder="Пошук запчастин...">
         <button>🔍</button>
     </div>
-    <button class="cart-btn" onclick="openCart()">🛒 Кошик (1)</button>
+    <button class="cart-btn" id="cartBtn" onclick="openCart()">🛒 Кошик (0)</button>
 </header>
 
-<!-- Меню -->
 <nav class="nav-menu">
     <a onclick="switchTab('home', event)">Головна</a>
     <a class="active" onclick="switchTab('catalog', event)">Товари та послуги</a>
@@ -144,7 +148,6 @@
     <a onclick="switchTab('delivery', event)">Доставка та оплата</a>
 </nav>
 
-<!-- КАТАЛОГ -->
 <div id="catalog" class="page-section active-section">
     <aside>
         <h3>Фільтри</h3>
@@ -155,7 +158,6 @@
     </aside>
 
     <div class="content-area">
-        <!-- ПАНЕЛЬ АДМІНІСТРАТОРА -->
         <div class="admin-panel" id="adminPanel">
             <h3>👑 Панель адміністратора</h3>
             <p style="font-size: 13px; margin-bottom: 10px;">Завантажте Excel-файл (.xlsx) з колонками: <b>Назва</b> та <b>Ціна</b></p>
@@ -165,24 +167,23 @@
 
         <div class="banner">ЛУЧШИЙ ВЫБОР ЗАПЧАСТЕЙ К СМЕСИТЕЛЯМ</div>
 
-        <!-- Сітка товарів, яка оновлюється з Excel або показує стандартний товар -->
         <div class="product-grid" id="productGrid">
+            <!-- Дефолтний товар -->
             <div class="product-card">
                 <div class="product-title">Засіб для видалення вапняного нальоту GEBERIT AQUACLEAN</div>
                 <div class="product-price">594 ₴</div>
-                <button class="buy-btn" onclick="openCart()">В кошику</button>
+                <button class="buy-btn" onclick="addToCart('Засіб для видалення вапняного нальоту GEBERIT AQUACLEAN', 594)">Купити</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Інші вкладки -->
 <div id="home" class="page-section"><div style="background:#fff; padding:20px; width:100%;"><h2>Головна</h2></div></div>
 <div id="about" class="page-section"><div style="background:#fff; padding:20px; width:100%;"><h2>Про нас</h2></div></div>
 <div id="contacts" class="page-section"><div style="background:#fff; padding:20px; width:100%;"><h2>Контакти</h2></div></div>
 <div id="delivery" class="page-section"><div style="background:#fff; padding:20px; width:100%;"><h2>Доставка та оплата</h2></div></div>
 
-<!-- ВІКНО ВХОДУ (Логін: fsuvorov976@gmail.com / Пароль: 0631023827Aa) -->
+<!-- МОДАЛКА ЛОГІНУ -->
 <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
         <h3>Вхід для адміністратора</h3>
@@ -193,19 +194,32 @@
     </div>
 </div>
 
-<!-- КОШИК -->
+<!-- ВИПАДНИЙ КОШИК -->
 <div class="cart-overlay" id="cartOverlay">
     <div class="cart-modal">
         <div class="cart-header">
             <span>Кошик</span>
             <button class="close-btn" onclick="closeCart()">✕</button>
         </div>
-        <div style="font-size: 13px; margin-bottom: 10px;">Засіб для видалення вапняного нальоту — <b>594 ₴</b></div>
-        <button class="checkout-main-btn" onclick="alert('Перехід до оформлення замовлення')">Оформити замовлення</button>
+
+        <div id="cartItemsContainer" style="flex-grow: 1; overflow-y: auto;">
+            <!-- Сюди динамічно додаються товари -->
+        </div>
+
+        <div class="cart-total-area">
+            <div class="cart-total">
+                <span>Разом:</span>
+                <span id="cartTotalPrice">0 ₴</span>
+            </div>
+            <button class="checkout-main-btn" onclick="alert('Оформлення замовлення')">Оформити замовлення</button>
+        </div>
     </div>
 </div>
 
 <script>
+    // Масив для зберігання товарів у кошику
+    let cart = [];
+
     function switchTab(tabId, event) {
         document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active-section'));
         document.getElementById(tabId).classList.add('active-section');
@@ -221,7 +235,6 @@
         document.getElementById('loginModal').style.display = 'none';
     }
 
-    // Перевірка ваших даних доступу
     function checkAdminLogin() {
         const user = document.getElementById('adminUser').value.trim();
         const pass = document.getElementById('adminPass').value.trim();
@@ -229,13 +242,79 @@
         if (user === 'fsuvorov976@gmail.com' && pass === '0631023827Aa') {
             alert('Успішно! Вітаємо, ви увійшли як адміністратор.');
             closeLoginModal();
-            document.getElementById('adminPanel').style.display = 'block'; // З'являється панель завантаження Excel
+            document.getElementById('adminPanel').style.display = 'block';
         } else {
             alert('Невірний логін або пароль!');
         }
     }
 
-    // Реальна обробка Excel-файлу за допомогою SheetJS
+    // Функції кошика
+    function addToCart(title, price) {
+        const existingItem = cart.find(item => item.title === title);
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            cart.push({ title, price: Number(price), quantity: 1 });
+        }
+        updateCartUI();
+        openCart();
+    }
+
+    function changeQuantity(index, delta) {
+        cart[index].quantity += delta;
+        if (cart[index].quantity <= 0) {
+            cart.splice(index, 1);
+        }
+        updateCartUI();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        updateCartUI();
+    }
+
+    function updateCartUI() {
+        const container = document.getElementById('cartItemsContainer');
+        const cartBtn = document.getElementById('cartBtn');
+        const totalPriceEl = document.getElementById('cartTotalPrice');
+
+        container.innerHTML = '';
+        let totalCount = 0;
+        let totalPrice = 0;
+
+        if (cart.length === 0) {
+            container.innerHTML = '<p style="color: #778; text-align: center; margin-top: 20px;">Ваш кошик порожній</p>';
+        }
+
+        cart.forEach((item, index) => {
+            totalCount += item.quantity;
+            totalPrice += item.price * item.quantity;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'cart-item';
+            itemDiv.innerHTML = `
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight: bold;">${item.title}</div>
+                        <div>${item.price} ₴ × ${item.quantity} = <b>${item.price * item.quantity} ₴</b></div>
+                        <div class="cart-item-controls">
+                            <button onclick="changeQuantity(${index}, -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="changeQuantity(${index}, 1)">+</button>
+                        </div>
+                    </div>
+                    <button class="remove-item" onclick="removeFromCart(${index})" title="Видалити">🗑️</button>
+                `;
+            container.appendChild(itemDiv);
+        });
+
+        cartBtn.innerText = `🛒 Кошик (${totalCount})`;
+        totalPriceEl.innerText = `${totalPrice} ₴`;
+    }
+
+    function openCart() { document.getElementById('cartOverlay').style.display = 'flex'; }
+    function closeCart() { document.getElementById('cartOverlay').style.display = 'none'; }
+
+    // Обробка Excel
     function handleExcelUpload() {
         const fileInput = document.getElementById('excelFile');
         if (fileInput.files.length === 0) {
@@ -249,25 +328,19 @@
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
-
-            // Беремо перший лист з таблиці
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
-
-            // Перетворюємо у формат масиву об'єктів
             const jsonRows = XLSX.utils.sheet_to_json(worksheet);
 
             if (jsonRows.length === 0) {
-                alert('Файл виявився порожнім або має невірний формат.');
+                alert('Файл порожній.');
                 return;
             }
 
-            // Оновлюємо сітку товарів на сайті на основі даних з файлу
             const productGrid = document.getElementById('productGrid');
-            productGrid.innerHTML = ''; // Очищаємо старі товари
+            productGrid.innerHTML = '';
 
             jsonRows.forEach(row => {
-                // Шукаємо ключі назви та ціни (гнучкий пошук по колонках)
                 const title = row['Назва'] || row['Title'] || row['Товар'] || 'Без назви';
                 const price = row['Ціна'] || row['Price'] || row['Ціна, грн'] || '0';
 
@@ -276,19 +349,16 @@
                 card.innerHTML = `
                         <div class="product-title">${title}</div>
                         <div class="product-price">${price} ₴</div>
-                        <button class="buy-btn" onclick="openCart()">Купити</button>
+                        <button class="buy-btn" onclick="addToCart('${title.replace(/'/g, "\\'")}', ${price})">Купити</button>
                     `;
                 productGrid.appendChild(card);
             });
 
-            alert('Товари та ціни успішно оновлено з файлу Excel!');
+            alert('Товари успішно оновлено з Excel!');
         };
 
         reader.readAsArrayBuffer(file);
     }
-
-    function openCart() { document.getElementById('cartOverlay').style.display = 'flex'; }
-    function closeCart() { document.getElementById('cartOverlay').style.display = 'none'; }
 </script>
 </body>
 </html>
