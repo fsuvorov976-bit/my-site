@@ -116,6 +116,37 @@
         .cart-total-area { margin-top: auto; border-top: 1px solid #ddd; padding-top: 15px; }
         .cart-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 15px; }
         .checkout-main-btn { background: #0099ff; color: white; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; text-align: center; }
+
+        /* PROM.UA CHECKOUT STYLE MODAL */
+        .checkout-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f2f4f7; display: none; z-index: 2000; overflow-y: auto; }
+        .checkout-container { max-width: 1100px; margin: 30px auto; background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 30px; }
+        .checkout-top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e1e4e8; padding-bottom: 20px; margin-bottom: 25px; }
+        .checkout-title { font-size: 22px; font-weight: bold; color: #111; }
+
+        .checkout-layout { display: flex; gap: 40px; }
+        .checkout-form-side { flex: 1; }
+        .checkout-sidebar { width: 360px; background: #fafbfc; border: 1px solid #e1e4e8; border-radius: 8px; padding: 20px; height: fit-content; }
+
+        .checkout-step { background: #fff; border: 1px solid #e1e4e8; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .step-header { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: bold; color: #111; margin-bottom: 15px; }
+        .step-number { background: #0089ff; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 600; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #dcdfe6; border-radius: 6px; font-size: 14px; outline: none; transition: border 0.2s; }
+        .form-group input:focus { border-color: #0089ff; }
+
+        .option-card { border: 1px solid #dcdfe6; border-radius: 8px; padding: 15px; margin-bottom: 10px; cursor: pointer; display: flex; align-items: flex-start; gap: 12px; transition: border 0.2s; }
+        .option-card input { margin-top: 3px; accent-color: #0089ff; }
+        .option-card:hover { border-color: #0089ff; }
+        .option-details { font-size: 13px; color: #666; line-height: 1.5; margin-top: 5px; }
+
+        .sidebar-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .sidebar-product-list { max-height: 220px; overflow-y: auto; margin-bottom: 15px; border-bottom: 1px solid #e1e4e8; padding-bottom: 10px; }
+        .sidebar-item { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; gap: 10px; }
+        .sidebar-total-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; margin-bottom: 10px; }
+        .place-order-btn { background: #0099ff; color: white; border: none; padding: 14px; width: 100%; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 16px; text-align: center; transition: background 0.2s; }
+        .place-order-btn:hover { background: #007acc; }
     </style>
 </head>
 <body>
@@ -208,6 +239,7 @@
     </div>
 </div>
 
+<!-- ADMIN LOGIN MODAL -->
 <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
         <h3 style="margin-bottom: 15px; color: #003366;">Вхід для адміністратора</h3>
@@ -218,6 +250,7 @@
     </div>
 </div>
 
+<!-- CART SIDEBAR MODAL -->
 <div class="cart-overlay" id="cartOverlay">
     <div class="cart-modal">
         <div class="cart-header">
@@ -229,7 +262,125 @@
         </div>
         <div class="cart-total-area">
             <div class="cart-total"><span>Разом:</span><span id="cartTotalPrice">0 ₴</span></div>
-            <button class="checkout-main-btn" onclick="checkoutOrder()">Перейти до оформлення</button>
+            <button class="checkout-main-btn" onclick="openCheckout()">Перейти до оформлення</button>
+        </div>
+    </div>
+</div>
+
+<!-- PROM.UA CHECKOUT PAGE MODAL -->
+<div class="checkout-overlay" id="checkoutOverlay">
+    <div class="checkout-container">
+        <div class="checkout-top-bar">
+            <div class="checkout-title">Оформлення замовлення</div>
+            <button class="close-btn" onclick="closeCheckout()">✕ Закрити</button>
+        </div>
+
+        <div class="checkout-layout">
+            <!-- FORM SIDE -->
+            <div class="checkout-form-side">
+
+                <!-- Step 1: Контактні дані -->
+                <div class="checkout-step">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <span>Контактні дані</span>
+                    </div>
+                    <div style="display: flex; gap: 15px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Прізвище *</label>
+                            <input type="text" id="orderLastName" placeholder="Введіть прізвище">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Ім'я *</label>
+                            <input type="text" id="orderFirstName" placeholder="Введіть ім'я">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Телефон *</label>
+                        <input type="text" id="orderPhone" placeholder="+380 (__) ___-__-__">
+                    </div>
+                </div>
+
+                <!-- Step 2: Доставка -->
+                <div class="checkout-step">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <span>Доставка</span>
+                    </div>
+
+                    <label class="option-card">
+                        <input type="radio" name="delivery" checked>
+                        <div>
+                            <strong>Нова Пошта</strong>
+                            <div class="option-details">
+                                • У межах населеного пункту — від 70 ₴<br>
+                                • По Україні — від 80 ₴<br>
+                                Доплата за отримання у поштоматі — +10 ₴
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="option-card">
+                        <input type="radio" name="delivery">
+                        <div>
+                            <strong>Самовивіз</strong>
+                            <div class="option-details">Безкоштовно з нашого магазину-складу.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Step 3: Оплата -->
+                <div class="checkout-step">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <span>Оплата</span>
+                    </div>
+
+                    <label class="option-card">
+                        <input type="radio" name="payment" checked>
+                        <div>
+                            <strong>Безпечна оплата карткою (ПромОплата)</strong>
+                            <div class="option-details">Промінфо гарантує безпеку. Повернемо гроші при відмові від посилки.</div>
+                        </div>
+                    </label>
+
+                    <label class="option-card">
+                        <input type="radio" name="payment">
+                        <div>
+                            <strong>Післяплата</strong>
+                            <div class="option-details">Оплата при отриманні на пошті.</div>
+                        </div>
+                    </label>
+
+                    <label class="option-card">
+                        <input type="radio" name="payment">
+                        <div>
+                            <strong>Оплата на рахунок (IBAN)</strong>
+                            <div class="option-details" style="font-family: monospace; color: #003366; font-weight: bold;">UA263052990000026007000104355</div>
+                        </div>
+                    </label>
+                </div>
+
+            </div>
+
+            <!-- SIDEBAR ORDER SUMMARY -->
+            <div class="checkout-sidebar">
+                <div class="sidebar-title">
+                    <span>Замовлення</span>
+                    <span id="sidebarCount" style="font-size: 13px; color: #666; font-weight: normal;">0 товарів</span>
+                </div>
+                <div class="sidebar-product-list" id="sidebarProductList">
+                    <!-- Items rendered dynamically -->
+                </div>
+                <div class="sidebar-total-row">
+                    <span>До сплати:</span>
+                    <span id="sidebarTotalPrice" style="color: #b12704;">0 ₴</span>
+                </div>
+                <button class="place-order-btn" onclick="submitFinalOrder()">Оформити замовлення</button>
+                <div style="font-size: 11px; color: #888; text-align: center; margin-top: 12px; line-height: 1.4;">
+                    Натискаючи кнопку, ви погоджуєтеся з умовами обробки даних.
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -467,17 +618,6 @@
         openCart();
     }
 
-    function checkoutOrder() {
-        if (cart.length === 0) {
-            alert('Кошик порожній!');
-            return;
-        }
-        alert('Дякуємо за замовлення! Наш менеджер зв\'яжеться з вами найближчим часом.');
-        cart = [];
-        updateCartUI();
-        closeCart();
-    }
-
     function updateCartUI() {
         document.getElementById('cartBtn').innerText = `🛒 Кошик (${cart.length})`;
         const container = document.getElementById('cartItemsContainer');
@@ -505,6 +645,52 @@
 
     function openCart() { document.getElementById('cartOverlay').style.display = 'flex'; }
     function closeCart() { document.getElementById('cartOverlay').style.display = 'none'; }
+
+    function openCheckout() {
+        if (cart.length === 0) {
+            alert('Кошик порожній!');
+            return;
+        }
+        closeCart();
+
+        // Populate sidebar summary
+        document.getElementById('sidebarCount').innerText = `${cart.length} товар(ів)`;
+        let listHtml = '';
+        let total = 0;
+        cart.forEach(item => {
+            total += item.price;
+            listHtml += `
+                    <div class="sidebar-item">
+                        <span>${item.title}</span>
+                        <strong style="color: #b12704; white-space: nowrap;">${item.price} ₴</strong>
+                    </div>
+                `;
+        });
+        document.getElementById('sidebarProductList').innerHTML = listHtml;
+        document.getElementById('sidebarTotalPrice').innerText = total + ' ₴';
+
+        document.getElementById('checkoutOverlay').style.display = 'block';
+    }
+
+    function closeCheckout() {
+        document.getElementById('checkoutOverlay').style.display = 'none';
+    }
+
+    function submitFinalOrder() {
+        const lastName = document.getElementById('orderLastName').value.trim();
+        const firstName = document.getElementById('orderFirstName').value.trim();
+        const phone = document.getElementById('orderPhone').value.trim();
+
+        if (!lastName || !firstName || !phone) {
+            alert('Будь ласка, заповніть обов’язкові контактні дані (Прізвище, Ім’я та Телефон)!');
+            return;
+        }
+
+        alert(`Дякуємо за замовлення, ${firstName} ${lastName}! Наш менеджер зателефонує вам на номер ${phone} найближчим часом.`);
+        cart = [];
+        updateCartUI();
+        closeCheckout();
+    }
 </script>
 </body>
 </html>
