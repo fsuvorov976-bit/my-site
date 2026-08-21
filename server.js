@@ -58,39 +58,34 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
         const jsonRows = xlsx.utils.sheet_to_json(worksheet);
 
         const products = jsonRows.map((row, index) => {
-            // Базові поля з автоматичним скануванням альтернативних назв колонок
             const title = row['Название_позиции'] || row['Название_позиции_укр'] || row['Назва'] || row['Title'] || 'Без назви';
             const price = parseFloat(row['Цена'] || row['Цена_от'] || row['Ціна'] || row['Price'] || 0);
 
-            // Зображення
             const imgUrl = row['Ссылка_изображения'] || row['Изображение'] || row['Фото'] || row['Image'] || '';
             let firstImg = '';
             if (imgUrl) {
                 firstImg = imgUrl.toString().split(',')[0].trim();
             }
 
-            // --- АВТОМАТИЧНЕ ЗАПОВНЕННЯ ТА СКАНИ ---
-            // 1. Код товару (якщо немає — генеруємо 8-значний)
+            // --- ПЕРЕВІРКА ТА ГЕНЕРАЦІЯ 8-ЗНАЧНОГО КОДУ ---
             let productCode = row['Код_товара'] || row['Идентификатор_товара'];
             if (!productCode || String(productCode).trim() === '') {
                 productCode = generate8DigitCode();
             }
 
-            // 2. Тип товару (якщо пустий — беремо з назви групи)
+            // Автоматичне заповнення типу товару, якщо він порожній
             let productType = row['Тип_товара'];
             if (!productType || String(productType).trim() === '') {
                 productType = row['Название_группы'] || 'Не вказано';
             }
 
-            // 3. Виробник
             let manufacturer = row['Производитель'];
             if (!manufacturer || String(manufacturer).trim() === '') {
                 manufacturer = 'Не вказано';
             }
 
-            // Повертаємо об'єкт товару, зберігаючи всі оригінальні дані + згенеровані коди й скани
             return {
-                ...row, // Зберігаємо всі інші оригінальні колонки з Excel (характеристики тощо)
+                ...row,
                 id: index + 1,
                 title: title,
                 price: price,
