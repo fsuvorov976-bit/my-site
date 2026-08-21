@@ -77,7 +77,8 @@
 </div>
 
 <script>
-    const BACKEND_URL = 'https://my-site-backend-b81a.onrender.com';
+    // Если тестируете локально, можете изменить на 'http://localhost:3000'
+    const BACKEND_URL = '';
     let savedPassword = '';
 
     // Строгая проверка пароля через сервер
@@ -109,7 +110,7 @@
                 document.getElementById('adminPanel').classList.remove('hidden');
                 loadAdminProducts();
             } else {
-                // Если пароль неверный (статус 401)
+                // Если пароль неверный
                 authMessage.innerHTML = '<div class="alert alert-error">Неверный пароль администратора! Доступ запрещен.</div>';
                 document.getElementById('adminPanel').classList.add('hidden');
             }
@@ -132,7 +133,7 @@
 
             listContainer.innerHTML = products.map(p => `
                 <div class="admin-product-item">
-                    <span><b>${p.name}</b> — ${p.price} ₴</span>
+                    <span><b>${p.title || p.name}</b> — ${p.price} ₴</span>
                     <button class="delete-btn" onclick="deleteProduct(${p.id})">Удалить</button>
                 </div>
             `).join('');
@@ -173,7 +174,7 @@
         statusMessage.innerHTML = '<div class="alert">Сохранение...</div>';
 
         const productData = {
-            name: document.getElementById('title').value,
+            title: document.getElementById('title').value,
             price: Number(document.getElementById('price').value),
             image: document.getElementById('image').value,
             description: document.getElementById('description').value

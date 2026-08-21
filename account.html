@@ -1,41 +1,31 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <title>Кабінет</title>
-</head>
-<body>
-<h1>Особистий кабінет</h1>
-<div id="loginFormSection">
-    <form id="loginForm">
-        <input type="text" placeholder="Логін">
-        <input type="password" placeholder="Пароль">
-        <button type="submit">Увійти</button>
-    </form>
+<!-- Внутри account.html -->
+<div id="login-form">
+    <h2>Вход в кабинет администратора</h2>
+    <input type="text" id="username" placeholder="Логин">
+    <input type="password" id="password" placeholder="Пароль">
+    <button onclick="loginAdmin()">Войти</button>
 </div>
-<div id="profileSection" class="hidden">
-    <p>Вітаємо у кабінеті!</p>
-    <button id="logoutBtn">Вийти</button>
-</div>
+
 <script>
-    // JS logic from your screenshot
-    const loginForm = document.getElementById('loginForm');
-    const loginFormSection = document.getElementById('loginFormSection');
-    const profileSection = document.getElementById('profileSection');
-    const logoutBtn = document.getElementById('logoutBtn');
+    async function loginAdmin() {
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
 
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        // Add login logic here
-        loginFormSection.classList.add('hidden');
-        profileSection.classList.remove('hidden');
-    });
+        // Отправляем запрос на сервер для проверки
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user, password: pass })
+        });
 
-    logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('user');
-        profileSection.classList.add('hidden');
-        loginFormSection.classList.remove('hidden');
-    });
+        const data = await response.json();
+
+        if (data.success) {
+            // Если логин и пароль верные, сохраняем метку и перенаправляем на админку
+            localStorage.setItem('isAdmin', 'true');
+            window.location.href = '/admin.html';
+        } else {
+            alert('Неверный логин или пароль!');
+        }
+    }
 </script>
-</body>
-</html>

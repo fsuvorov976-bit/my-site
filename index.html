@@ -11,9 +11,20 @@
             background-color: #002244; color: #fff; font-size: 13px;
             display: flex; justify-content: space-between; padding: 8px 40px; align-items: center;
         }
-        .cabinet-wrapper { opacity: 0.8; transition: opacity 0.3s; }
-        .cabinet-wrapper:hover { opacity: 1; }
-        .top-bar a.hidden-cabinet { color: #fff; text-decoration: none; cursor: pointer; }
+        /* Маскировка кнопки Кабинет под фон */
+        .cabinet-wrapper {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .cabinet-wrapper:hover {
+            opacity: 0.15;
+        }
+        .top-bar a.hidden-cabinet {
+            color: #002244; /* Сливается с фоном #002244 */
+            text-decoration: none;
+            cursor: pointer;
+            user-select: none;
+        }
 
         .header {
             background-color: #fff; display: flex; align-items: center;
@@ -665,7 +676,6 @@
             stockElem.innerHTML = '<span class="stock-badge out-of-stock" style="font-size:12px;">✕ Немає в наявності</span>';
         }
 
-        // Керування адмін-блоком у модалці
         const modalAdminBox = document.getElementById('modalAdminBox');
         if (isAdminLoggedIn) {
             modalAdminBox.style.display = 'block';
@@ -783,18 +793,31 @@
 
     function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
 
-    function checkAdminLogin() {
+    async function checkAdminLogin() {
         const user = document.getElementById('adminUser').value.trim();
         const pass = document.getElementById('adminPass').value.trim();
-        if (user === 'fsuvorov976@gmail.com' && pass === '0631023827Aa') {
-            isAdminLoggedIn = true;
-            localStorage.setItem('admin_logged', 'true');
-            closeLoginModal();
-            document.getElementById('adminPanel').style.display = 'block';
-            document.getElementById('cabinetLink').innerText = 'Вийти (Адмін)';
-            filterProducts();
-        } else {
-            alert('Невірний логін або пароль!');
+
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                isAdminLoggedIn = true;
+                localStorage.setItem('admin_logged', 'true');
+                closeLoginModal();
+                document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('cabinetLink').innerText = 'Вийти (Адмін)';
+                filterProducts();
+            } else {
+                alert('Невірний логін або пароль!');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Помилка з\'єднання з сервером!');
         }
     }
 
@@ -892,8 +915,6 @@
             selectDeliveryType('np');
         } else if (!allowNp && allowPickup) {
             selectDeliveryType('pickup');
-        } else if (!allowNp && !allowPickup) {
-            alert('Увага: товари у кошику мають конфліктуючі методи доставки!');
         }
 
         const payOnline = document.getElementById('payCardOnline');
@@ -1067,7 +1088,7 @@
         let filtered = [];
 
         if (currentSubtype === 'branch') {
-            filtered = cachedWarehouses.filter(wh => !wh.Description.toLowerCase().includes('поштомат') && !wh.Description.toLowerCase().includes('поштоматное'));
+            filtered = cachedWarehouses.filter(wh => !wh.Description.toLowerCase().includes('поштомат'));
         } else if (currentSubtype === 'postomat') {
             filtered = cachedWarehouses.filter(wh => wh.Description.toLowerCase().includes('поштомат'));
         }

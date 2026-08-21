@@ -16,6 +16,24 @@ const DATA_FILE = path.join(__dirname, 'products.json');
 const TELEGRAM_BOT_TOKEN = '8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4';
 const TELEGRAM_CHAT_ID = '6432307028';
 
+// --- ДАНІ АДМІНІСТРАТОРА ---
+// Можете змінити логін та пароль на свої власні
+const ADMIN_CREDENTIALS = {
+    username: 'admin',
+    password: '12345'
+};
+
+// --- ЕНДПОІНТ АВТОРИЗАЦІЇ АДМІНА ---
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+
+    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+        res.json({ success: true });
+    } else {
+        res.json({ success: false, error: 'Невірний логін або пароль' });
+    }
+});
+
 app.get('/api/products', (req, res) => {
     if (fs.existsSync(DATA_FILE)) {
         const data = fs.readFileSync(DATA_FILE, 'utf8');
@@ -60,7 +78,6 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
 
 // --- ОБРОБНИК ЗАМОВЛЕНЬ ДЛЯ TELEGRAM ---
 app.post('/api/order', async (req, res) => {
-    // Додали deliveryDetails сюди:
     const { lastName, firstName, phone, cart, total, delivery, deliveryDetails, payment } = req.body;
 
     let message = `🛒 <b>Нове замовлення!</b>\n\n`;
