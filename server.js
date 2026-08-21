@@ -47,6 +47,31 @@ app.get('/api/products', (req, res) => {
     }
 });
 
+// --- ЕНДПОІНТ ОНОВЛЕННЯ ТОВАРУ (ОПИСУ ТОЩО) ---
+app.post('/api/update-product', (req, res) => {
+    const updatedProduct = req.body;
+
+    if (!fs.existsSync(DATA_FILE)) {
+        return res.status(404).json({ success: false, error: 'Файл з даними не знайдено' });
+    }
+
+    try {
+        let products = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        const index = products.findIndex(p => p.title === updatedProduct.title || p.id === updatedProduct.id);
+
+        if (index !== -1) {
+            products[index] = { ...products[index], ...updatedProduct };
+            fs.writeFileSync(DATA_FILE, JSON.stringify(products, null, 2));
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ success: false, error: 'Товар не знайдено' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, error: 'Помилка збереження товару' });
+    }
+});
+
 app.post('/api/upload', upload.single('excelFile'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'Файл не завантажено' });
