@@ -19,8 +19,8 @@ const TELEGRAM_CHAT_ID = '6432307028';
 // --- ДАНІ АДМІНІСТРАТОРА ---
 // Можете змінити логін та пароль на свої власні
 const ADMIN_CREDENTIALS = {
-    username: 'admin',
-    password: '12345'
+    username: 'fsuvorov976@gmail.com',
+    password: '0631023827Aa'
 };
 
 // --- ЕНДПОІНТ АВТОРИЗАЦІЇ АДМІНА ---
@@ -98,11 +98,11 @@ app.post('/api/order', async (req, res) => {
 
     try {
         const fetch = (await import('node-fetch')).default;
-        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        const telegramResponse = await fetch(`https://api.telegram.org/bot$8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                chat_id: TELEGRAM_CHAT_ID,
+                chat_id: 6432307028,
                 text: message,
                 parse_mode: 'HTML'
             })

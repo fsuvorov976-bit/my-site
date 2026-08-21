@@ -11,7 +11,6 @@
             background-color: #002244; color: #fff; font-size: 13px;
             display: flex; justify-content: space-between; padding: 8px 40px; align-items: center;
         }
-        /* Маскировка кнопки Кабинет под фон */
         .cabinet-wrapper {
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -20,7 +19,7 @@
             opacity: 0.15;
         }
         .top-bar a.hidden-cabinet {
-            color: #002244; /* Сливается с фоном #002244 */
+            color: #002244;
             text-decoration: none;
             cursor: pointer;
             user-select: none;
@@ -53,6 +52,8 @@
 
         .page-section { display: none; padding: 25px 40px; }
         .page-section.active-section { display: flex; gap: 25px; }
+        .static-page-section { display: none; padding: 30px 40px; background: #fff; margin: 20px 40px; border-radius: 6px; border: 1px solid #e1e4e8; }
+        .static-page-section.active-section { display: block; }
 
         aside { width: 280px; background: #fff; padding: 20px; border: 1px solid #e1e4e8; height: fit-content; border-radius: 4px; }
         aside h3 { background-color: #003366; color: white; padding: 10px 15px; margin: -20px -20px 15px -20px; font-size: 14px; text-transform: uppercase; border-radius: 4px 4px 0 0; }
@@ -81,11 +82,15 @@
         }
         .brand-tile {
             background: #f9f9f9; border: 1px solid #ddd; padding: 10px; text-align: center; border-radius: 4px;
-            font-weight: bold; font-size: 13px; color: #003366; cursor: pointer; transition: all 0.2s;
+            font-weight: bold; font-size: 13px; color: #003366; cursor: pointer; transition: all 0.2s; position: relative;
         }
         .brand-tile:hover {
             background: #003366; color: white; border-color: #003366; transform: translateY(-2px);
         }
+        .brand-delete-btn {
+            position: absolute; top: 2px; right: 4px; font-size: 11px; color: #c62828; background: none; border: none; cursor: pointer; display: none;
+        }
+        .brand-tile:hover .brand-delete-btn { display: block; }
 
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
         .product-card {
@@ -120,7 +125,7 @@
             background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
         }
         .modal-box { background: white; padding: 30px; border-radius: 8px; width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-box input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; }
+        .modal-box input, .modal-box textarea { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
         .modal-box button { width: 100%; padding: 10px; background: #003366; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
         .product-modal-container {
@@ -181,7 +186,7 @@
 <body>
 
 <div class="top-bar">
-    <div>UA &nbsp;&nbsp;&nbsp; 📞 +380 (97) 431-82-19</div>
+    <div>UA &nbsp;&nbsp;&nbsp; <span id="topBarPhone">📞 +380 (97) 431-82-19</span></div>
     <div class="cabinet-wrapper">
         <a href="#" class="hidden-cabinet" id="cabinetLink" onclick="handleCabinetClick(event)">Кабінет</a>
     </div>
@@ -199,10 +204,24 @@
     <button class="cart-btn" id="cartBtn" onclick="openCart()">🛒 Кошик (0)</button>
 </header>
 
+<!-- Меню -->
 <nav class="nav-menu">
+    <a onclick="switchTab('home', event)">Головна сторінка</a>
     <a class="active" onclick="switchTab('catalog', event)">Товари та послуги</a>
+    <a onclick="switchTab('brands', event)">Виробники</a>
+    <a onclick="switchTab('contacts', event)">Контакти</a>
 </nav>
 
+<!-- Секція: Головна сторінка -->
+<div id="home" class="static-page-section">
+    <h2 style="color: #003366; margin-bottom: 15px;">Ласкаво просимо до Nikita Shop!</h2>
+    <p style="font-size: 14px; line-height: 1.6; color: #555; margin-bottom: 15px;">
+        Ми є авторизованим сервісом та магазином надійних запчастин для змішувачів та сантехніки. У нас ви знайдете широкий асортимент товарів за найкращими цінами з доставкою по всій Україні.
+    </p>
+    <button onclick="switchTab('catalog', document.querySelector('.nav-menu a:nth-child(2)'))" style="background: #003366; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Перейти до каталогу товарів</button>
+</div>
+
+<!-- Секція: Товари та послуги (Каталог) -->
 <div id="catalog" class="page-section active-section" style="flex-direction: column;">
     <div style="display: flex; gap: 25px; width: 100%;">
 
@@ -247,6 +266,7 @@
                     <button onclick="setBatchStock(false)" style="background: #c62828; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">✕ Зробити вибрані Відсутніми</button>
                     <button onclick="selectAllVisible()" style="background: #003366; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 12px;">Вибрати всі</button>
                     <button onclick="clearSelection()" style="background: #777; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 12px;">Зняти виділення</button>
+                    <button onclick="openAddBrandModal()" style="background: #0089ff; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">➕ Додати виробника</button>
                 </div>
 
                 <div style="border-top: 1px solid #b0bec5; padding-top: 10px;">
@@ -256,7 +276,7 @@
                 </div>
             </div>
 
-            <div class="banner">ЛУЧШИЙ ВЫБОР ЗАПЧАСТЕЙ К СМЕСИТЕЛЯМ</div>
+            <div class="banner">КРАЩИЙ ВИБІР ЗАПЧАСТИН ДО ЗМІШУВАЧІВ</div>
 
             <div class="top-brands-showcase">
                 <div class="top-brands-title">Популярні виробники сантехніки</div>
@@ -268,6 +288,28 @@
     </div>
 </div>
 
+<!-- Секція: Виробники -->
+<div id="brands" class="static-page-section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="color: #003366;">Наші виробники сантехніки</h2>
+        <button id="addBrandBtnPage" onclick="openAddBrandModal()" style="display: none; background: #003366; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">➕ Додати виробника</button>
+    </div>
+    <p style="font-size: 14px; color: #555; margin-bottom: 20px;">Ми співпрацюємо виключно з перевіреними світовими бренди запчастин:</p>
+    <div class="brands-tiles-grid" id="staticBrandsGrid" style="max-width: 700px;"></div>
+</div>
+
+<!-- Секція: Контакти -->
+<div id="contacts" class="static-page-section">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="color: #003366;">Контактна інформація</h2>
+        <button id="editContactsBtn" onclick="openEditContactsModal()" style="display: none; background: #003366; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">✏️ Редагувати контакти</button>
+    </div>
+    <p style="font-size: 14px; color: #555; margin-bottom: 10px;"><b>Телефон підтримки:</b> <span id="contactPhoneText">+380 (97) 431-82-19</span></p>
+    <p style="font-size: 14px; color: #555; margin-bottom: 10px;"><b>Графік роботи:</b> <span id="contactHoursText">Пн-Пт: 09:00 – 18:00, Сб-Нд: вихідні</span></p>
+    <p style="font-size: 14px; color: #555; margin-bottom: 10px;"><b>Електронна пошта:</b> <span id="contactEmailText">support@nikitashop.ua</span></p>
+    <p style="font-size: 14px; color: #555; margin-bottom: 10px;"><b>Адреса:</b> <span id="contactAddressText">м. Київ, вул. Прикладна, 1</span></p>
+</div>
+
 <!-- ADMIN LOGIN MODAL -->
 <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
@@ -276,6 +318,41 @@
         <input type="password" id="adminPass" placeholder="Пароль">
         <button onclick="checkAdminLogin()">Увійти</button>
         <button onclick="closeLoginModal()" style="background: #aaa; margin-top: 8px;">Скасувати</button>
+    </div>
+</div>
+
+<!-- ADD BRAND MODAL -->
+<div class="modal-overlay" id="addBrandModal">
+    <div class="modal-box">
+        <h3 style="margin-bottom: 15px; color: #003366;">Додати нового виробника</h3>
+        <input type="text" id="newBrandNameInput" placeholder="Назва виробника (напр. Grohe)">
+        <button onclick="saveNewBrand()">Додати</button>
+        <button onclick="closeAddBrandModal()" style="background: #aaa; margin-top: 8px;">Скасувати</button>
+    </div>
+</div>
+
+<!-- EDIT CONTACTS MODAL -->
+<div class="modal-overlay" id="editContactsModal">
+    <div class="modal-box" style="width: 400px;">
+        <h3 style="margin-bottom: 15px; color: #003366;">Редагувати контакти</h3>
+        <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-size:12px;">Телефон</label>
+            <input type="text" id="editPhoneInput">
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-size:12px;">Графік роботи</label>
+            <input type="text" id="editHoursInput">
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-size:12px;">Email</label>
+            <input type="text" id="editEmailInput">
+        </div>
+        <div class="form-group" style="margin-bottom:15px;">
+            <label style="font-size:12px;">Адреса</label>
+            <input type="text" id="editAddressInput">
+        </div>
+        <button onclick="saveContacts()">Зберегти зміни</button>
+        <button onclick="closeEditContactsModal()" style="background: #aaa; margin-top: 8px;">Скасувати</button>
     </div>
 </div>
 
@@ -292,7 +369,6 @@
                 <h2 id="modalProductTitle" style="font-size: 18px; color: #111; margin-bottom: 15px; line-height: 1.4;"></h2>
                 <div id="modalProductCategory" style="font-size: 13px; color: #666; margin-bottom: 15px;"></div>
 
-                <!-- Адмін-панель всередині модалки товару -->
                 <div id="modalAdminBox" style="display: none; background: #f0f4f8; border: 1px solid #b0bec5; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 12px;">
                     <strong style="color: #0d47a1; display:block; margin-bottom: 6px;">👑 Керування (Адмін):</strong>
                     <div style="font-weight:bold; color:#444; margin-bottom:4px;">Доступні способи оплати:</div>
@@ -344,7 +420,6 @@
         <div class="checkout-layout">
             <div class="checkout-form-side">
 
-                <!-- Step 1 -->
                 <div class="checkout-step">
                     <div class="step-header">
                         <div class="step-number">1</div>
@@ -366,7 +441,6 @@
                     </div>
                 </div>
 
-                <!-- Step 2 -->
                 <div class="checkout-step">
                     <div class="step-header">
                         <div class="step-number">2</div>
@@ -427,7 +501,6 @@
                     </div>
                 </div>
 
-                <!-- Step 3 -->
                 <div class="checkout-step" style="margin-bottom: 0;">
                     <div class="step-header">
                         <div class="step-number">3</div>
@@ -461,7 +534,6 @@
 
             </div>
 
-            <!-- SIDEBAR -->
             <div class="checkout-sidebar">
                 <div class="sidebar-title">
                     <span>Замовлення</span>
@@ -486,17 +558,50 @@
     let cachedWarehouses = [];
     let currentModalProductTitle = null;
 
+    let extraBrands = JSON.parse(localStorage.getItem('extra_brands') || '[]');
+    let contactInfo = JSON.parse(localStorage.getItem('contact_info') || JSON.stringify({
+        phone: '+380 (97) 431-82-19',
+        hours: 'Пн-Пт: 09:00 – 18:00, Сб-Нд: вихідні',
+        email: 'support@nikitashop.ua',
+        address: 'м. Київ, вул. Прикладна, 1'
+    }));
+
     const NP_API_KEY = "";
 
     window.onload = function() {
         loadProductsFromServer();
+        applyContactsToDOM();
+
         if (localStorage.getItem('admin_logged') === 'true') {
-            isAdminLoggedIn = true;
-            document.getElementById('adminPanel').style.display = 'block';
-            document.getElementById('cabinetLink').innerText = 'Вийти (Адмін)';
+            setAdminUIMode(true);
         }
         selectCityPreset('Київ', '8d5a980d-391c-11dd-90d9-001a92567626');
     };
+
+    function setAdminUIMode(loggedIn) {
+        isAdminLoggedIn = loggedIn;
+        if (loggedIn) {
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('cabinetLink').innerText = 'Вийти (Адмін)';
+            document.getElementById('editContactsBtn').style.display = 'block';
+            document.getElementById('addBrandBtnPage').style.display = 'block';
+        } else {
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('cabinetLink').innerText = 'Кабінет';
+            document.getElementById('editContactsBtn').style.display = 'none';
+            document.getElementById('addBrandBtnPage').style.display = 'none';
+        }
+        buildFiltersAndTiles(allProducts);
+        filterProducts();
+    }
+
+    function applyContactsToDOM() {
+        document.getElementById('topBarPhone').innerText = '📞 ' + contactInfo.phone;
+        document.getElementById('contactPhoneText').innerText = contactInfo.phone;
+        document.getElementById('contactHoursText').innerText = contactInfo.hours;
+        document.getElementById('contactEmailText').innerText = contactInfo.email;
+        document.getElementById('contactAddressText').innerText = contactInfo.address;
+    }
 
     function loadProductsFromServer() {
         fetch('/api/products')
@@ -529,8 +634,10 @@
     }
 
     function buildFiltersAndTiles(products) {
+        const serverBrands = [...new Set(products.map(p => p.brand || p.Производитель).filter(Boolean))];
+        const combinedBrands = [...new Set([...serverBrands, ...extraBrands])];
+
         const categories = [...new Set(products.map(p => p.category || p.Тип_запчасти || 'Інше').filter(Boolean))];
-        const brands = [...new Set(products.map(p => p.brand || p.Производитель || 'Інші').filter(Boolean))];
 
         const catContainer = document.getElementById('categoryCheckboxes');
         catContainer.innerHTML = '';
@@ -540,15 +647,80 @@
 
         const brandContainer = document.getElementById('brandCheckboxes');
         brandContainer.innerHTML = '';
-        brands.forEach(brand => {
+        combinedBrands.forEach(brand => {
             brandContainer.innerHTML += `<label><input type="checkbox" value="${brand}" class="brand-filter" onchange="filterProducts()"> ${brand}</label>`;
         });
 
+        renderBrandsGrids(combinedBrands);
+    }
+
+    function renderBrandsGrids(brands) {
         const topBrandsGrid = document.getElementById('topBrandsGrid');
-        topBrandsGrid.innerHTML = '';
+        const staticBrandsGrid = document.getElementById('staticBrandsGrid');
+
+        let htmlTop = '';
+        let htmlStatic = '';
+
         brands.forEach(brand => {
-            topBrandsGrid.innerHTML += `<div class="brand-tile" onclick="selectBrandFromTile('${brand}')">${brand}</div>`;
+            let deleteBtnHtml = '';
+            if (isAdminLoggedIn && extraBrands.includes(brand)) {
+                deleteBtnHtml = `<button class="brand-delete-btn" onclick="event.stopPropagation(); deleteBrand('${brand}')" title="Видалити">✕</button>`;
+            }
+
+            let tileHtml = `<div class="brand-tile" onclick="selectBrandFromTile('${brand}')">${brand} ${deleteBtnHtml}</div>`;
+            htmlTop += tileHtml;
+            htmlStatic += `<div class="brand-tile" onclick="switchTab('catalog', document.querySelector('.nav-menu a:nth-child(2)')); selectBrandFromTile('${brand}');">${brand} ${deleteBtnHtml}</div>`;
         });
+
+        topBrandsGrid.innerHTML = htmlTop;
+        if (staticBrandsGrid) staticBrandsGrid.innerHTML = htmlStatic;
+    }
+
+    function openAddBrandModal() {
+        document.getElementById('newBrandNameInput').value = '';
+        document.getElementById('addBrandModal').style.display = 'flex';
+    }
+    function closeAddBrandModal() {
+        document.getElementById('addBrandModal').style.display = 'none';
+    }
+    function saveNewBrand() {
+        const val = document.getElementById('newBrandNameInput').value.trim();
+        if (!val) { alert('Введіть назву виробника!'); return; }
+        if (!extraBrands.includes(val)) {
+            extraBrands.push(val);
+            localStorage.setItem('extra_brands', JSON.stringify(extraBrands));
+            buildFiltersAndTiles(allProducts);
+        }
+        closeAddBrandModal();
+    }
+    function deleteBrand(brandName) {
+        if (confirm(`Видалити виробника ${brandName}?`)) {
+            extraBrands = extraBrands.filter(b => b !== brandName);
+            localStorage.setItem('extra_brands', JSON.stringify(extraBrands));
+            buildFiltersAndTiles(allProducts);
+        }
+    }
+
+    function openEditContactsModal() {
+        document.getElementById('editPhoneInput').value = contactInfo.phone;
+        document.getElementById('editHoursInput').value = contactInfo.hours;
+        document.getElementById('editEmailInput').value = contactInfo.email;
+        document.getElementById('editAddressInput').value = contactInfo.address;
+        document.getElementById('editContactsModal').style.display = 'flex';
+    }
+    function closeEditContactsModal() {
+        document.getElementById('editContactsModal').style.display = 'none';
+    }
+    function saveContacts() {
+        contactInfo.phone = document.getElementById('editPhoneInput').value.trim();
+        contactInfo.hours = document.getElementById('editHoursInput').value.trim();
+        contactInfo.email = document.getElementById('editEmailInput').value.trim();
+        contactInfo.address = document.getElementById('editAddressInput').value.trim();
+
+        localStorage.setItem('contact_info', JSON.stringify(contactInfo));
+        applyContactsToDOM();
+        closeEditContactsModal();
+        alert('Контакти успішно оновлено!');
     }
 
     function selectBrandFromTile(brandName) {
@@ -772,19 +944,22 @@
     }
 
     function switchTab(tabId, event) {
-        document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active-section'));
-        document.getElementById(tabId).classList.add('active-section');
+        document.querySelectorAll('.page-section, .static-page-section').forEach(sec => sec.classList.remove('active-section'));
+        const target = document.getElementById(tabId);
+        if (target) target.classList.add('active-section');
+
+        if (event && event.currentTarget) {
+            document.querySelectorAll('.nav-menu a').forEach(a => a.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
     }
 
     function handleCabinetClick(e) {
         e.preventDefault();
         if (isAdminLoggedIn) {
             if (confirm('Вийти з адмін-панелі?')) {
-                isAdminLoggedIn = false;
+                setAdminUIMode(false);
                 localStorage.removeItem('admin_logged');
-                document.getElementById('adminPanel').style.display = 'none';
-                document.getElementById('cabinetLink').innerText = 'Кабінет';
-                filterProducts();
             }
         } else {
             document.getElementById('loginModal').style.display = 'flex';
@@ -806,12 +981,9 @@
             const data = await response.json();
 
             if (data.success) {
-                isAdminLoggedIn = true;
                 localStorage.setItem('admin_logged', 'true');
                 closeLoginModal();
-                document.getElementById('adminPanel').style.display = 'block';
-                document.getElementById('cabinetLink').innerText = 'Вийти (Адмін)';
-                filterProducts();
+                setAdminUIMode(true);
             } else {
                 alert('Невірний логін або пароль!');
             }
