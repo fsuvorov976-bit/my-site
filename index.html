@@ -253,7 +253,6 @@
         .suggestion-item { padding: 8px 12px; font-size: 13px; cursor: pointer; }
         .suggestion-item:hover { background: #f0f7ff; }
 
-        /* Таблиця тарифів НП в оформленні */
         .np-tariff-table {
             width: 100%;
             margin-top: 12px;
@@ -555,7 +554,6 @@
                                 <span style="color: #666; font-size: 13px;">за тарифами перевізника</span>
                             </div>
 
-                            <!-- ТЕКСТОВА ТАБЛИЦЯ ТАРИФІВ НОВОЇ ПОШТИ -->
                             <table class="np-tariff-table" onclick="event.stopPropagation()">
                                 <thead>
                                 <tr>
@@ -1026,30 +1024,6 @@
         localStorage.setItem('products_admin_config', JSON.stringify(configState));
     }
 
-    function saveProductEditsFromModal() {
-        if (!isAdminLoggedIn || !currentModalProductTitle) return;
-        const item = allProducts.find(p => p.title === currentModalProductTitle);
-        if (!item) return;
-
-        const titleInput = document.getElementById('editModalTitleInput');
-        const priceInput = document.getElementById('editModalPriceInput');
-
-        if (titleInput && priceInput) {
-            let newTitle = titleInput.value.trim();
-            let newPrice = parseFloat(priceInput.value);
-
-            if (newTitle && newTitle !== item.title) {
-                item.title = newTitle;
-                currentModalProductTitle = newTitle;
-            }
-            if (!isNaN(newPrice)) {
-                item.price = newPrice;
-            }
-            saveAdminConfigToStorage();
-            filterProducts();
-        }
-    }
-
     function openProductModal(title) {
         const item = allProducts.find(p => p.title === title);
         if (!item) return;
@@ -1066,16 +1040,9 @@
         const titleArea = document.getElementById('modalTitleArea');
         const priceArea = document.getElementById('modalPriceArea');
 
-        if (isAdminLoggedIn) {
-            titleArea.innerHTML = `<label style="font-size:11px; color:#666; display:block; margin-bottom:2px;">Редагувати назву:</label>
-        <input type="text" id="editModalTitleInput" value="${item.title}" style="width:100%; padding:8px; font-size:16px; border:1px solid #0099ff; border-radius:4px; margin-bottom:10px;" oninput="saveProductEditsFromModal()">`;
-
-            priceArea.innerHTML = `<label style="font-size:11px; color:#666; display:block; margin-bottom:2px;">Редагувати ціну (₴):</label>
-        <input type="number" id="editModalPriceInput" value="${item.price}" style="width:100%; padding:8px; font-size:18px; font-weight:bold; color:#b12704; border:1px solid #0099ff; border-radius:4px; margin-bottom:15px;" oninput="saveProductEditsFromModal()">`;
-        } else {
-            titleArea.innerHTML = `<h2 style="font-size: 18px; color: #111; margin-bottom: 15px; line-height: 1.4;">${item.title}</h2>`;
-            priceArea.innerHTML = `<div style="font-size: 24px; font-weight: 800; color: #b12704; margin-bottom: 20px;">${item.price} ₴</div>`;
-        }
+        // Редагування прибрано: назва та ціна відображаються як звичайний текст для всіх
+        titleArea.innerHTML = `<h2 style="font-size: 18px; color: #111; margin-bottom: 15px; line-height: 1.4;">${item.title}</h2>`;
+        priceArea.innerHTML = `<div style="font-size: 24px; font-weight: 800; color: #b12704; margin-bottom: 20px;">${item.price} ₴</div>`;
 
         let cat = item.category || item.Тип_запчасти || 'Запчастини';
         let brand = item.brand || item.Производитель || '';
