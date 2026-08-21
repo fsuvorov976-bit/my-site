@@ -72,12 +72,23 @@ app.post('/api/update-product', (req, res) => {
     }
 });
 
+// --- ЕНДПОІНТ ЗАВАНТАЖЕННЯ EXCEL ТА ОНОВЛЕННЯ ТОВАРІВ ---
 app.post('/api/upload', upload.single('excelFile'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'Файл не завантажено' });
     }
 
     try {
+        // Завантажуємо старі товари, щоб не втратити дані виробників при оновленні
+        let oldProducts = [];
+        if (fs.existsSync(DATA_FILE)) {
+            try {
+                oldProducts = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+            } catch (e) {
+                oldProducts = [];
+            }
+        }
+
         const workbook = xlsx.readFile(req.file.path);
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonRows = xlsx.utils.sheet_to_json(worksheet);
@@ -92,21 +103,25 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
                 firstImg = imgUrl.toString().split(',')[0].trim();
             }
 
-            // --- ПЕРЕВІРКА ТА ГЕНЕРАЦІЯ 8-ЗНАЧНОГО КОДУ ---
+            // Код товару
             let productCode = row['Код_товара'] || row['Идентификатор_товара'];
             if (!productCode || String(productCode).trim() === '') {
                 productCode = generate8DigitCode();
             }
 
-            // Автоматичне заповнення типу товару, якщо він порожній
+            // Шукаємо старий товар, щоб зберегти його дані, якщо в новому файлі вони відсутні
+            const existingProduct = oldProducts.find(p => p.Код_товара === productCode || p.title === title);
+
+            // Тип товару
             let productType = row['Тип_товара'];
             if (!productType || String(productType).trim() === '') {
-                productType = row['Название_группы'] || 'Не вказано';
+                productType = row['Название_группы'] || (existingProduct ? existingProduct.Тип_товара : 'Не вказано');
             }
 
-            let manufacturer = row['Производитель'];
+            // Виробник (з перевіркою різних варіантів назв колонки та fallback на старі дані)
+            let manufacturer = row['Производитель'] || row['Виробник'] || row['Бренд'] || row['Brand'];
             if (!manufacturer || String(manufacturer).trim() === '') {
-                manufacturer = 'Не вказано';
+                manufacturer = existingProduct && existingProduct.Производитель ? existingProduct.Производитель : 'Не вказано';
             }
 
             return {
@@ -117,7 +132,7 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
                 image: firstImg,
                 Код_товара: productCode,
                 Тип_товара: productType,
-                Производитель: manufacturer
+                Производитель: String(manufacturer).trim()
             };
         });
 
