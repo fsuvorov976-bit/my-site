@@ -63,6 +63,44 @@
         .filter-list { max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
         .filter-list label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 
+        /* Стили для скролл-блока производителей и кнопки сброса */
+        .manufacturer-scroll-list {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+        .manufacturer-option {
+            padding: 6px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .manufacturer-option:hover {
+            background: #f0f4f8;
+        }
+        .manufacturer-option.active {
+            background: #003366;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-clear-filter {
+            width: 100%;
+            padding: 6px;
+            background: #f1f3f5;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #555;
+        }
+        .btn-clear-filter:hover {
+            background: #e2e6ea;
+        }
+
         .content-area { flex-grow: 1; }
 
         .banner {
@@ -249,9 +287,13 @@
                 <div class="filter-list" id="categoryCheckboxes"></div>
             </div>
 
+            <!-- Блок производителей с одиночным выбором, скроллом и кнопкой сброса -->
             <div class="filter-block" id="brandFilterContainer" style="border-bottom: none;">
                 <h4>Виробник</h4>
-                <div class="filter-list" id="brandCheckboxes"></div>
+                <div class="manufacturer-scroll-list" id="manufacturerScrollList">
+                    <!-- Сюда скрипт динамически вставляет производителей -->
+                </div>
+                <button class="btn-clear-filter" onclick="clearManufacturerFilter()">Очистити виробника</button>
             </div>
         </aside>
 
@@ -310,7 +352,7 @@
     <p style="font-size: 14px; color: #555; margin-bottom: 10px;"><b>Адреса:</b> <span id="contactAddressText">м. Київ, вул. Прикладна, 1</span></p>
 </div>
 
-<!-- ADMIN LOGIN MODAL -->
+<!-- MODALS -->
 <div class="modal-overlay" id="loginModal">
     <div class="modal-box">
         <h3 style="margin-bottom: 15px; color: #003366;">Вхід для адміністратора</h3>
@@ -321,7 +363,6 @@
     </div>
 </div>
 
-<!-- ADD BRAND MODAL -->
 <div class="modal-overlay" id="addBrandModal">
     <div class="modal-box">
         <h3 style="margin-bottom: 15px; color: #003366;">Додати нового виробника</h3>
@@ -331,7 +372,6 @@
     </div>
 </div>
 
-<!-- EDIT CONTACTS MODAL -->
 <div class="modal-overlay" id="editContactsModal">
     <div class="modal-box" style="width: 400px;">
         <h3 style="margin-bottom: 15px; color: #003366;">Редагувати контакти</h3>
@@ -356,7 +396,6 @@
     </div>
 </div>
 
-<!-- PRODUCT DETAILS MODAL -->
 <div class="modal-overlay" id="productModal">
     <div class="product-modal-container">
         <button class="close-btn" onclick="closeProductModal()" style="position: absolute; top: 15px; right: 20px;">✕</button>
@@ -399,7 +438,6 @@
     </div>
 </div>
 
-<!-- CART SIDEBAR MODAL -->
 <div class="cart-overlay" id="cartOverlay">
     <div class="cart-modal">
         <div class="cart-header">
@@ -416,7 +454,6 @@
     </div>
 </div>
 
-<!-- CHECKOUT PAGE MODAL -->
 <div class="checkout-overlay" id="checkoutOverlay">
     <div class="checkout-container">
         <div class="checkout-top-bar">
@@ -426,7 +463,6 @@
 
         <div class="checkout-layout">
             <div class="checkout-form-side">
-
                 <div class="checkout-step">
                     <div class="step-header">
                         <div class="step-number">1</div>
@@ -538,7 +574,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
 
             <div class="checkout-sidebar">
@@ -564,6 +599,7 @@ let isAdminLoggedIn = false;
 let selectedCityRef = '8d5a980d-391c-11dd-90d9-001a92567626';
 let cachedWarehouses = [];
 let currentModalProductTitle = null;
+let selectedSingleBrand = null; // Переменная для хранения выбранного производителя
 
 let extraBrands = JSON.parse(localStorage.getItem('extra_brands') || '[]');
 let contactInfo = JSON.parse(localStorage.getItem('contact_info') || JSON.stringify({
@@ -676,13 +712,42 @@ categories.forEach(cat => {
 catContainer.innerHTML += `<label><input type="checkbox" value="${cat}" class="cat-filter" onchange="filterProducts()"> ${cat}</label>`;
 });
 
-const brandContainer = document.getElementById('brandCheckboxes');
-brandContainer.innerHTML = '';
+// Одиночный скролл-список производителей
+const manufacturerScrollList = document.getElementById('manufacturerScrollList');
+manufacturerScrollList.innerHTML = '';
 combinedBrands.forEach(brand => {
-brandContainer.innerHTML += `<label><input type="checkbox" value="${brand}" class="brand-filter" onchange="filterProducts()"> ${brand}</label>`;
+let isActive = selectedSingleBrand === brand ? 'active' : '';
+manufacturerScrollList.innerHTML += `<div class="manufacturer-option ${isActive}" onclick="selectSingleBrand('${brand}')">${brand}</div>`;
 });
 
 renderBrandsGrids(combinedBrands);
+}
+
+// Выбор производителя из сайдбара (одиночный)
+function selectSingleBrand(brandName) {
+if (selectedSingleBrand === brandName) {
+selectedSingleBrand = null; // Повторный клик снимает выбор
+} else {
+selectedSingleBrand = brandName;
+}
+
+// Перерисовываем активные классы в списке
+document.querySelectorAll('.manufacturer-option').forEach(el => {
+if (el.innerText === selectedSingleBrand) {
+el.classList.add('active');
+} else {
+el.classList.remove('active');
+}
+});
+
+filterProducts();
+}
+
+// Кнопка очистки фильтра производителей
+function clearManufacturerFilter() {
+selectedSingleBrand = null;
+document.querySelectorAll('.manufacturer-option').forEach(el => el.classList.remove('active'));
+filterProducts();
 }
 
 function renderBrandsGrids(brands) {
@@ -755,9 +820,8 @@ alert('Контакти успішно оновлено!');
 }
 
 function selectBrandFromTile(brandName) {
-document.querySelectorAll('.brand-filter').forEach(cb => {
-if (cb.value === brandName) { cb.checked = !cb.checked; }
-});
+selectedSingleBrand = (selectedSingleBrand === brandName) ? null : brandName;
+buildFiltersAndTiles(allProducts); // обновит подсветку в сайдбаре
 filterProducts();
 }
 
@@ -974,7 +1038,6 @@ const maxPrice = parseFloat(document.getElementById('priceMax').value) || Infini
 const onlyInStock = document.getElementById('filterInStock').checked;
 
 const selectedCats = [...document.querySelectorAll('.cat-filter:checked')].map(cb => cb.value);
-const selectedBrands = [...document.querySelectorAll('.brand-filter:checked')].map(cb => cb.value);
 
 const filtered = allProducts.filter(item => {
 const matchesSearch = item.title.toLowerCase().includes(searchText);
@@ -985,7 +1048,7 @@ const itemCat = item.category || item.Тип_запчасти || 'Інше';
 const matchesCat = selectedCats.length === 0 || selectedCats.includes(itemCat);
 
 const itemBrand = item.brand || item.Производитель || 'Інші';
-const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(itemBrand);
+const matchesBrand = !selectedSingleBrand || itemBrand === selectedSingleBrand;
 
 return matchesSearch && matchesPrice && matchesStock && matchesCat && matchesBrand;
 });
