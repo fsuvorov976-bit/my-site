@@ -17,11 +17,15 @@ const TELEGRAM_BOT_TOKEN = '8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4';
 const TELEGRAM_CHAT_ID = '6432307028';
 
 // --- ДАНІ АДМІНІСТРАТОРА ---
-// Можете змінити логін та пароль на свої власні
 const ADMIN_CREDENTIALS = {
     username: 'fsuvorov976@gmail.com',
     password: '0631023827Aa'
 };
+
+// --- ФУНКЦІЯ ГЕНЕРАЦІЇ 8-ЗНАЧНОГО КОДУ ---
+function generate8DigitCode() {
+    return Math.floor(10000000 + Math.random() * 90000000).toString();
+}
 
 // --- ЕНДПОІНТ АВТОРИЗАЦІЇ АДМІНА ---
 app.post('/api/login', (req, res) => {
@@ -54,16 +58,47 @@ app.post('/api/upload', upload.single('excelFile'), (req, res) => {
         const jsonRows = xlsx.utils.sheet_to_json(worksheet);
 
         const products = jsonRows.map((row, index) => {
+            // Базові поля з автоматичним скануванням альтернативних назв колонок
             const title = row['Название_позиции'] || row['Название_позиции_укр'] || row['Назва'] || row['Title'] || 'Без назви';
             const price = parseFloat(row['Цена'] || row['Цена_от'] || row['Ціна'] || row['Price'] || 0);
-            const imgUrl = row['Ссылка_изображения'] || row['Изображение'] || row['Фото'] || row['Image'] || '';
 
+            // Зображення
+            const imgUrl = row['Ссылка_изображения'] || row['Изображение'] || row['Фото'] || row['Image'] || '';
             let firstImg = '';
             if (imgUrl) {
                 firstImg = imgUrl.toString().split(',')[0].trim();
             }
 
-            return { id: index + 1, title, price, image: firstImg };
+            // --- АВТОМАТИЧНЕ ЗАПОВНЕННЯ ТА СКАНИ ---
+            // 1. Код товару (якщо немає — генеруємо 8-значний)
+            let productCode = row['Код_товара'] || row['Идентификатор_товара'];
+            if (!productCode || String(productCode).trim() === '') {
+                productCode = generate8DigitCode();
+            }
+
+            // 2. Тип товару (якщо пустий — беремо з назви групи)
+            let productType = row['Тип_товара'];
+            if (!productType || String(productType).trim() === '') {
+                productType = row['Название_группы'] || 'Не вказано';
+            }
+
+            // 3. Виробник
+            let manufacturer = row['Производитель'];
+            if (!manufacturer || String(manufacturer).trim() === '') {
+                manufacturer = 'Не вказано';
+            }
+
+            // Повертаємо об'єкт товару, зберігаючи всі оригінальні дані + згенеровані коди й скани
+            return {
+                ...row, // Зберігаємо всі інші оригінальні колонки з Excel (характеристики тощо)
+                id: index + 1,
+                title: title,
+                price: price,
+                image: firstImg,
+                Код_товара: productCode,
+                Тип_товара: productType,
+                Производитель: manufacturer
+            };
         });
 
         fs.writeFileSync(DATA_FILE, JSON.stringify(products, null, 2));
@@ -98,11 +133,11 @@ app.post('/api/order', async (req, res) => {
 
     try {
         const fetch = (await import('node-fetch')).default;
-        const telegramResponse = await fetch(`https://api.telegram.org/bot$8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4/sendMessage`, {
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                chat_id: 6432307028,
+                chat_id: TELEGRAM_CHAT_ID,
                 text: message,
                 parse_mode: 'HTML'
             })
