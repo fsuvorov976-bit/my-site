@@ -102,7 +102,6 @@
 
         .content-area { flex-grow: 1; }
 
-        /* Стили для плашки выбранного производителя */
         .active-brand-badge-container {
             display: none;
             align-items: center;
@@ -353,7 +352,6 @@
                 <div class="brands-tiles-grid" id="topBrandsGrid"></div>
             </div>
 
-            <!-- Плашка активного производителя перенесена ПОД блок популярных производителей -->
             <div class="active-brand-badge-container" id="activeBrandBadge">
                 <div class="active-brand-badge-text">Вибраний виробник: <span id="badgeBrandName"></span></div>
                 <button class="btn-close-brand-badge" onclick="clearManufacturerFilter()" title="Скинути виробника">✕ Скинути</button>
@@ -1374,44 +1372,63 @@
     }
 
     function switchNpSubtype() {
-        renderFilteredWarehouses();
-    }
-
-    function loadNovaPoshtaWarehouses(cityRef) {
-        const selectElem = document.getElementById('npTargetSelect');
-        const dynamicContainer = document.getElementById('npDynamicFields');
-        if (selectElem) selectElem.innerHTML = '<option value="">Завантаження відділень...</option>';
-
         const currentSubtype = document.querySelector('input[name="np_sub"]:checked').value;
+        const dynamicContainer = document.getElementById('npDynamicFields');
 
         if (currentSubtype === 'courier') {
             if (dynamicContainer) {
                 dynamicContainer.innerHTML = `
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <div class="form-group" style="flex: 2; margin-bottom: 0;">
-                    <label style="font-size: 12px; color: #444;">Вулиця *</label>
-                    <input type="text" id="courierStreet" placeholder="Назва вулиці" style="padding: 10px; font-size: 13px;">
-                </div>
-                <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                    <label style="font-size: 12px; color: #444;">Будинок *</label>
-                    <input type="text" id="courierBuilding" placeholder=" №" style="padding: 10px; font-size: 13px;">
-                </div>
-            </div>
-            `;
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <div class="form-group" style="flex: 2; margin-bottom: 0;">
+                            <label style="font-size: 12px; color: #444;">Вулиця *</label>
+                            <input type="text" id="courierStreet" placeholder="Назва вулиці" style="padding: 10px; font-size: 13px;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <label style="font-size: 12px; color: #444;">Будинок *</label>
+                            <input type="text" id="courierBuilding" placeholder=" №" style="padding: 10px; font-size: 13px;">
+                        </div>
+                    </div>
+                `;
             }
-            return;
         } else {
             if (dynamicContainer) {
                 dynamicContainer.innerHTML = `
-            <div class="form-group" style="margin-bottom: 0;">
-                <label id="npTargetLabel" style="font-size: 12px; color: #444;">Відділення <span style="color: red;">*</span></label>
-                <select id="npTargetSelect" style="padding: 10px; font-size: 13px;">
-                    <option value="">Завантаження відділень...</option>
-                </select>
-            </div>
-            `;
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label id="npTargetLabel" style="font-size: 12px; color: #444;">Відділення <span style="color: red;">*</span></label>
+                        <select id="npTargetSelect" style="padding: 10px; font-size: 13px;">
+                            <option value="">Завантаження відділень...</option>
+                        </select>
+                    </div>
+                `;
             }
+            renderFilteredWarehouses();
         }
+    }
+
+    function loadNovaPoshtaWarehouses(cityRef) {
+        const currentSubtype = document.querySelector('input[name="np_sub"]:checked').value;
+
+        if (currentSubtype === 'courier') {
+            switchNpSubtype();
+            return;
+        }
+
+        const selectElem = document.getElementById('npTargetSelect');
+        const dynamicContainer = document.getElementById('npDynamicFields');
+
+        if (dynamicContainer && !document.getElementById('npTargetSelect')) {
+            dynamicContainer.innerHTML = `
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label id="npTargetLabel" style="font-size: 12px; color: #444;">Відділення <span style="color: red;">*</span></label>
+                    <select id="npTargetSelect" style="padding: 10px; font-size: 13px;">
+                        <option value="">Завантаження відділень...</option>
+                    </select>
+                </div>
+            `;
+        }
+
+        const updatedSelectElem = document.getElementById('npTargetSelect');
+        if (updatedSelectElem) updatedSelectElem.innerHTML = '<option value="">Завантаження відділень...</option>';
 
         fetch('https://api.novaposhta.ua/v2.0/json/', {
             method: 'POST',
