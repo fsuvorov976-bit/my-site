@@ -252,6 +252,31 @@
         }
         .suggestion-item { padding: 8px 12px; font-size: 13px; cursor: pointer; }
         .suggestion-item:hover { background: #f0f7ff; }
+
+        /* Таблиця тарифів НП в оформленні */
+        .np-tariff-table {
+            width: 100%;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            border-collapse: collapse;
+            font-size: 11px;
+            background: #fff;
+            border: 1px solid #e1e4e8;
+        }
+        .np-tariff-table th, .np-tariff-table td {
+            border: 1px solid #e1e4e8;
+            padding: 5px 8px;
+            text-align: center;
+        }
+        .np-tariff-table th {
+            background-color: #f0f4f8;
+            color: #003366;
+            font-weight: bold;
+        }
+        .np-tariff-table td:first-child {
+            font-weight: bold;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -520,8 +545,8 @@
                         <span>Доставка <span style="color: red;">*</span></span>
                     </div>
 
-                    <div class="option-card" id="npCard" onclick="selectDeliveryType('np')">
-                        <input type="radio" name="delivery" id="npRadio">
+                    <div class="option-card active-option-card" id="npCard" onclick="selectDeliveryType('np')">
+                        <input type="radio" name="delivery" id="npRadio" checked>
                         <div style="flex-grow: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <strong style="color: #003366; display: flex; align-items: center; gap: 6px;">
@@ -530,15 +555,53 @@
                                 <span style="color: #666; font-size: 13px;">за тарифами перевізника</span>
                             </div>
 
+                            <!-- ТЕКСТОВА ТАБЛИЦЯ ТАРИФІВ НОВОЇ ПОШТИ -->
+                            <table class="np-tariff-table" onclick="event.stopPropagation()">
+                                <thead>
+                                <tr>
+                                    <th>Вага</th>
+                                    <th>Відділение (+80 грн)</th>
+                                    <th>Почтомат (+90 грн)</th>
+                                    <th>Кур'єр (+140 грн)</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td>Документи</td>
+                                    <td>80 грн</td>
+                                    <td>90 грн</td>
+                                    <td>140 грн</td>
+                                </tr>
+                                <tr>
+                                    <td>До 2 кг</td>
+                                    <td>90 грн</td>
+                                    <td>100 грн</td>
+                                    <td>150 грн</td>
+                                </tr>
+                                <tr>
+                                    <td>До 10 кг</td>
+                                    <td>135 грн</td>
+                                    <td>145 грн</td>
+                                    <td>195 грн</td>
+                                </tr>
+                                <tr>
+                                    <td>До 30 кг</td>
+                                    <td>200 грн</td>
+                                    <td>210 грн</td>
+                                    <td>260 грн</td>
+                                </tr>
+                                </tbody>
+                            </table>
+
                             <div style="display: flex; gap: 20px; margin-top: 15px; font-size: 13px;" onclick="event.stopPropagation()">
                                 <label class="np-sub-branch" style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
-                                    <input type="radio" name="np_sub" value="branch" checked onchange="switchNpSubtype()" style="accent-color: #0089ff;"> У відділення
+                                    <input type="radio" name="np_sub" value="branch" checked onchange="switchNpSubtype()" style="accent-color: #0089ff;"> У відділення (+80 ₴)
                                 </label>
                                 <label class="np-sub-postomat" style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
-                                    <input type="radio" name="np_sub" value="postomat" onchange="switchNpSubtype()" style="accent-color: #0089ff;"> У поштомат
+                                    <input type="radio" name="np_sub" value="postomat" onchange="switchNpSubtype()" style="accent-color: #0089ff;"> У поштомат (+90 ₴)
                                 </label>
                                 <label class="np-sub-courier" style="display: inline-flex; align-items: center; gap: 5px; cursor: pointer;">
-                                    <input type="radio" name="np_sub" value="courier" onchange="switchNpSubtype()" style="accent-color: #0089ff;"> Кур'єром
+                                    <input type="radio" name="np_sub" value="courier" onchange="switchNpSubtype()" style="accent-color: #0089ff;"> Кур'єром (+140 ₴)
                                 </label>
                             </div>
 
@@ -612,6 +675,10 @@
                     <span id="sidebarCount" style="font-size: 13px; color: #666; font-weight: normal;">0 товарів</span>
                 </div>
                 <div class="sidebar-product-list" id="sidebarProductList"></div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: #555;">
+                    <span>Доставка:</span>
+                    <span id="sidebarDeliveryPrice">0 ₴</span>
+                </div>
                 <div class="sidebar-total-row">
                     <span>До сплати:</span>
                     <span id="sidebarTotalPrice" style="color: #b12704;">0 ₴</span>
@@ -1294,16 +1361,7 @@
             selectPaymentCard(availablePayCards[0]);
         }
 
-        let totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-        document.getElementById('sidebarCount').innerText = `${totalCount} товар(ів)`;
-        let listHtml = '', total = 0;
-        cart.forEach(item => {
-            let itemTotal = item.price * item.quantity;
-            total += itemTotal;
-            listHtml += `<div class="sidebar-item"><span>${item.title} (<b>${item.quantity} шт.</b>)</span><strong style="color: #b12704; white-space: nowrap;">${itemTotal} ₴</strong></div>`;
-        });
-        document.getElementById('sidebarProductList').innerHTML = listHtml;
-        document.getElementById('sidebarTotalPrice').innerText = total + ' ₴';
+        updateCheckoutSummary();
         document.getElementById('checkoutOverlay').style.display = 'block';
     }
 
@@ -1320,6 +1378,32 @@
             document.getElementById('pickupCard').classList.add('active-option-card');
             document.getElementById('pickupRadio').checked = true;
         }
+        updateCheckoutSummary();
+    }
+
+    function updateCheckoutSummary() {
+        let totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+        document.getElementById('sidebarCount').innerText = `${totalCount} товар(ів)`;
+
+        let productsTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        let deliveryCost = 0;
+
+        const isNp = document.getElementById('npRadio').checked;
+        if (isNp) {
+            const subtype = document.querySelector('input[name="np_sub"]:checked').value;
+            if (subtype === 'branch') deliveryCost = 80;
+            else if (subtype === 'postomat') deliveryCost = 90;
+            else if (subtype === 'courier') deliveryCost = 140;
+        }
+
+        let listHtml = '';
+        cart.forEach(item => {
+            let itemTotal = item.price * item.quantity;
+            listHtml += `<div class="sidebar-item"><span>${item.title} (<b>${item.quantity} шт.</b>)</span><strong style="color: #b12704; white-space: nowrap;">${itemTotal} ₴</strong></div>`;
+        });
+        document.getElementById('sidebarProductList').innerHTML = listHtml;
+        document.getElementById('sidebarDeliveryPrice').innerText = deliveryCost + ' ₴';
+        document.getElementById('sidebarTotalPrice').innerText = (productsTotal + deliveryCost) + ' ₴';
     }
 
     function searchNpCities(query) {
@@ -1403,6 +1487,7 @@
             }
             renderFilteredWarehouses();
         }
+        updateCheckoutSummary();
     }
 
     function loadNovaPoshtaWarehouses(cityRef) {
@@ -1507,6 +1592,8 @@
         const deliveryType = isNp ? 'Нова Пошта' : 'Самовивіз';
 
         let deliveryDetails = 'Самовивіз з магазину';
+        let deliveryCost = 0;
+
         if (isNp) {
             const cityName = document.getElementById('npCityInput').value.trim() || 'Не вказано';
             const subtype = document.querySelector('input[name="np_sub"]:checked').value;
@@ -1515,11 +1602,16 @@
                 const street = document.getElementById('courierStreet') ? document.getElementById('courierStreet').value.trim() : '';
                 const building = document.getElementById('courierBuilding') ? document.getElementById('courierBuilding').value.trim() : '';
                 deliveryDetails = `Кур'єр (${cityName}, вул. ${street}, буд. ${building})`;
+                deliveryCost = 140;
             } else {
                 const selectElem = document.getElementById('npTargetSelect');
                 const warehouseName = selectElem && selectElem.options[selectElem.selectedIndex] ? selectElem.options[selectElem.selectedIndex].text : 'Відділення не вибрано';
                 let subName = 'Відділення';
-                if (subtype === 'postomat') subName = 'Поштомат';
+                deliveryCost = 80;
+                if (subtype === 'postomat') {
+                    subName = 'Поштомат';
+                    deliveryCost = 90;
+                }
                 deliveryDetails = `${subName} — м. ${cityName}, ${warehouseName}`;
             }
         }
@@ -1527,7 +1619,8 @@
         const activePaymentCard = document.querySelector('#checkoutOverlay .checkout-step:nth-last-child(1) .option-card.active-option-card');
         const paymentType = activePaymentCard ? activePaymentCard.querySelector('strong').innerText : 'Не вказано';
 
-        let total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        let productsTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        let total = productsTotal + deliveryCost;
 
         const orderData = {
             lastName,
