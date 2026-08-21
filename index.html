@@ -380,12 +380,13 @@
                         <label><input type="checkbox" id="modalPayAccount" onchange="updateModalConfig('account', this.checked)"> На рахунок</label>
                     </div>
                     <div style="font-weight:bold; color:#444; margin-bottom:4px;">Доступні способи доставки:</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
                         <label><input type="checkbox" id="modalDelivNp" onchange="updateModalConfig('np', this.checked)"> НП (Відділення)</label>
                         <label><input type="checkbox" id="modalDelivPostomat" onchange="updateModalConfig('postomat', this.checked)"> НП (Поштомат)</label>
                         <label><input type="checkbox" id="modalDelivCourier" onchange="updateModalConfig('courier', this.checked)"> НП (Кур'єр)</label>
                         <label><input type="checkbox" id="modalDelivPickup" onchange="updateModalConfig('pickup', this.checked)"> Самовивіз</label>
                     </div>
+                    <button onclick="deleteProduct(currentModalProductTitle)" style="background: #c62828; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px;">🗑 Видалити цей товар</button>
                 </div>
             </div>
             <div>
@@ -614,7 +615,12 @@
             .then(response => response.json())
             .then(products => {
                 let savedConfig = JSON.parse(localStorage.getItem('products_admin_config') || '{}');
-                allProducts = products.map((item, idx) => {
+                let deletedTitles = JSON.parse(localStorage.getItem('deleted_products') || '[]');
+
+                // Фильтруем те товары, которые были удалены администратором
+                let activeServerProducts = products.filter(item => !deletedTitles.includes(item.title));
+
+                allProducts = activeServerProducts.map((item, idx) => {
                     let defaultInStock = true;
                     if (item.Naаlihie === '-' || item.Наличие === '-') {
                         defaultInStock = false;
@@ -640,6 +646,28 @@
                 filterProducts();
             })
             .catch(error => console.log('Помилка завантаження товарів:', error));
+    }
+
+    function deleteProduct(title) {
+        if (!confirm(`Ви дійсно хочете видалити товар "${title}"?`)) return;
+
+        // Удаляем из общего массива
+        allProducts = allProducts.filter(p => p.title !== title);
+
+        // Сохраняем список удаленных в localStorage
+        let deletedTitles = JSON.parse(localStorage.getItem('deleted_products') || '[]');
+        if (!deletedTitles.includes(title)) {
+            deletedTitles.push(title);
+            localStorage.setItem('deleted_products', JSON.stringify(deletedTitles));
+        }
+
+        // Закрываем модальное окно товара, если оно было открыто
+        closeProductModal();
+
+        // Перестраиваем фильтры и обновляем сетку
+        buildFiltersAndTiles(allProducts);
+        filterProducts();
+        alert('Товар успішно видалено!');
     }
 
     function buildFiltersAndTiles(products) {
@@ -781,6 +809,8 @@
                         <label><input type="checkbox" ${d.postomat !== false ? 'checked' : ''} onchange="updateProductConfig('${attrTitle}', 'postomat', this.checked)"> НП (Поштомат)</label>
                         <label><input type="checkbox" ${d.courier !== false ? 'checked' : ''} onchange="updateProductConfig('${attrTitle}', 'courier', this.checked)"> НП (Кур'єр)</label>
                         <label><input type="checkbox" ${d.pickup !== false ? 'checked' : ''} onchange="updateProductConfig('${attrTitle}', 'pickup', this.checked)"> Самовивіз</label>
+
+                        <button onclick="deleteProduct('${safeTitle}')" style="background: #c62828; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; margin-top: 8px; width: 100%;">🗑 Видалити товар</button>
                     </div>
                 `;
             }
