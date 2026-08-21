@@ -102,6 +102,41 @@
 
         .content-area { flex-grow: 1; }
 
+        /* Стили для плашки выбранного производителя */
+        .active-brand-badge-container {
+            display: none;
+            align-items: center;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            justify-content: space-between;
+        }
+        .active-brand-badge-container.visible {
+            display: flex;
+        }
+        .active-brand-badge-text {
+            font-size: 14px;
+            color: #0d47a1;
+            font-weight: bold;
+        }
+        .active-brand-badge-text span {
+            background: #003366;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+        .btn-close-brand-badge {
+            background: none;
+            border: none;
+            color: #c62828;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
         .banner {
             background: linear-gradient(135deg, #002244 0%, #004080 100%);
             color: white; padding: 30px; text-align: center; font-size: 22px; font-weight: bold;
@@ -291,6 +326,12 @@
         </aside>
 
         <div class="content-area">
+
+            <!-- Плашка активного производителя -->
+            <div class="active-brand-badge-container" id="activeBrandBadge">
+                <div class="active-brand-badge-text">Вибраний виробник: <span id="badgeBrandName"></span></div>
+                <button class="btn-close-brand-badge" onclick="clearManufacturerFilter()" title="Скинути виробника">✕ Скинути</button>
+            </div>
 
             <div class="admin-panel" id="adminPanel">
                 <h3 style="color: #0d47a1; margin-bottom: 10px;">👑 Панель адміністратора</h3>
@@ -728,12 +769,24 @@
             }
         });
 
+        // Управление отображением плашки
+        const badgeContainer = document.getElementById('activeBrandBadge');
+        const badgeNameSpan = document.getElementById('badgeBrandName');
+
+        if (selectedSingleBrand) {
+            badgeNameSpan.innerText = selectedSingleBrand;
+            badgeContainer.classList.add('visible');
+        } else {
+            badgeContainer.classList.remove('visible');
+        }
+
         filterProducts();
     }
 
     function clearManufacturerFilter() {
         selectedSingleBrand = null;
         document.querySelectorAll('.manufacturer-option').forEach(el => el.classList.remove('active'));
+        document.getElementById('activeBrandBadge').classList.remove('visible');
         filterProducts();
     }
 
@@ -807,9 +860,7 @@
     }
 
     function selectBrandFromTile(brandName) {
-        selectedSingleBrand = (selectedSingleBrand === brandName) ? null : brandName;
-        buildFiltersAndTiles(allProducts);
-        filterProducts();
+        selectSingleBrand(brandName);
     }
 
     function renderProducts(products) {
