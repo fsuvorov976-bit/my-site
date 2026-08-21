@@ -84,10 +84,12 @@
         }
         .product-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
 
-        .product-img-container { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; background: #fff; border-radius: 4px; overflow: hidden; }
+        .product-img-container { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; background: #fff; border-radius: 4px; overflow: hidden; cursor: pointer; }
         .product-img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-        .product-title { font-size: 13px; margin-bottom: 12px; text-align: left; color: #222; line-height: 1.4; height: 36px; overflow: hidden; }
+        .product-title { font-size: 13px; margin-bottom: 12px; text-align: left; color: #222; line-height: 1.4; height: 36px; overflow: hidden; cursor: pointer; }
+        .product-title:hover { color: #0099ff; text-decoration: underline; }
+
         .product-price { font-size: 18px; font-weight: 800; color: #b12704; text-align: left; margin-bottom: 12px; }
         .buy-btn { background-color: #ffa41c; border: 1px solid #ff8f00; padding: 10px; width: 100%; font-weight: bold; cursor: pointer; border-radius: 4px; transition: background 0.2s; }
         .buy-btn:hover { background-color: #fa9500; }
@@ -99,6 +101,9 @@
         .admin-panel { display: none; background: #e3f2fd; border: 2px dashed #0099ff; padding: 20px; margin-bottom: 25px; border-radius: 6px; }
         .batch-checkbox { display: none; position: absolute; top: 10px; left: 10px; width: 20px; height: 20px; cursor: pointer; z-index: 10; }
 
+        .admin-options-box { display: none; background: #fff; border: 1px solid #b0bec5; padding: 10px; margin-top: 10px; border-radius: 4px; text-align: left; font-size: 12px; }
+        .admin-options-box label { display: block; margin-bottom: 4px; cursor: pointer; }
+
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
@@ -106,6 +111,14 @@
         .modal-box { background: white; padding: 30px; border-radius: 8px; width: 350px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-box input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; }
         .modal-box button { width: 100%; padding: 10px; background: #003366; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .product-modal-container {
+            background: white; width: 750px; max-width: 95%; border-radius: 8px; padding: 30px;
+            display: flex; gap: 30px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;
+        }
+        .product-modal-img-box { width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; background: #f9f9f9; border: 1px solid #eee; border-radius: 6px; overflow: hidden; }
+        .product-modal-img-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .product-modal-info { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
 
         .cart-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: flex-end; z-index: 1000; }
         .cart-modal { width: 420px; background: white; height: 100%; padding: 25px; display: flex; flex-direction: column; overflow-y: auto; box-shadow: -5px 0 15px rgba(0,0,0,0.1); }
@@ -255,6 +268,43 @@
     </div>
 </div>
 
+<!-- PRODUCT DETAILS MODAL -->
+<div class="modal-overlay" id="productModal">
+    <div class="product-modal-container">
+        <button class="close-btn" onclick="closeProductModal()" style="position: absolute; top: 15px; right: 20px;">✕</button>
+        <div class="product-modal-img-box" id="modalProductImgContainer">
+            <span style="color: #aaa; font-size: 14px;">Без фото</span>
+        </div>
+        <div class="product-modal-info">
+            <div>
+                <div id="modalProductStock" style="margin-bottom: 10px;"></div>
+                <h2 id="modalProductTitle" style="font-size: 18px; color: #111; margin-bottom: 15px; line-height: 1.4;"></h2>
+                <div id="modalProductCategory" style="font-size: 13px; color: #666; margin-bottom: 15px;"></div>
+
+                <!-- Адмін-панель всередині модалки товару -->
+                <div id="modalAdminBox" style="display: none; background: #f0f4f8; border: 1px solid #b0bec5; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 12px;">
+                    <strong style="color: #0d47a1; display:block; margin-bottom: 6px;">👑 Керування (Адмін):</strong>
+                    <div style="font-weight:bold; color:#444; margin-bottom:4px;">Доступні способи оплати:</div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                        <label><input type="checkbox" id="modalPayOnline" onchange="updateModalConfig('online', this.checked)"> Онлайн</label>
+                        <label><input type="checkbox" id="modalPayCash" onchange="updateModalConfig('cash', this.checked)"> Післяплата</label>
+                        <label><input type="checkbox" id="modalPayAccount" onchange="updateModalConfig('account', this.checked)"> На рахунок</label>
+                    </div>
+                    <div style="font-weight:bold; color:#444; margin-bottom:4px;">Доступні способи доставки:</div>
+                    <div style="display: flex; gap: 10px;">
+                        <label><input type="checkbox" id="modalDelivNp" onchange="updateModalConfig('np', this.checked)"> Нова Пошта</label>
+                        <label><input type="checkbox" id="modalDelivPickup" onchange="updateModalConfig('pickup', this.checked)"> Самовивіз</label>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div id="modalProductPrice" style="font-size: 24px; font-weight: 800; color: #b12704; margin-bottom: 20px;"></div>
+                <button class="buy-btn" id="modalBuyBtn" style="padding: 12px; font-size: 15px;">Купити</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- CART SIDEBAR MODAL -->
 <div class="cart-overlay" id="cartOverlay">
     <div class="cart-modal">
@@ -312,8 +362,8 @@
                         <span>Доставка <span style="color: red;">*</span></span>
                     </div>
 
-                    <div class="option-card active-option-card" id="npCard" onclick="selectDeliveryType('np')">
-                        <input type="radio" name="delivery" id="npRadio" checked>
+                    <div class="option-card" id="npCard" onclick="selectDeliveryType('np')">
+                        <input type="radio" name="delivery" id="npRadio">
                         <div style="flex-grow: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <strong style="color: #003366; display: flex; align-items: center; gap: 6px;">
@@ -373,15 +423,15 @@
                         <span>Оплата <span style="color: red;">*</span></span>
                     </div>
 
-                    <div class="option-card active-option-card" onclick="selectPaymentCard(this)">
-                        <input type="radio" name="payment" checked>
+                    <div class="option-card" id="payCardOnline" onclick="selectPaymentCard(this)">
+                        <input type="radio" name="payment">
                         <div>
                             <strong>Безпечна оплата карткою</strong>
                             <div style="font-size: 12px; color: #666; margin-top: 3px;">Швидка та захищена оплата онлайн.</div>
                         </div>
                     </div>
 
-                    <div class="option-card" onclick="selectPaymentCard(this)">
+                    <div class="option-card" id="payCardCash" onclick="selectPaymentCard(this)">
                         <input type="radio" name="payment">
                         <div>
                             <strong>Післяплата</strong>
@@ -389,7 +439,7 @@
                         </div>
                     </div>
 
-                    <div class="option-card" onclick="selectPaymentCard(this)" style="margin-bottom: 0;">
+                    <div class="option-card" id="payCardAccount" onclick="selectPaymentCard(this)" style="margin-bottom: 0;">
                         <input type="radio" name="payment">
                         <div>
                             <strong>Оплата на рахунок</strong>
@@ -423,6 +473,7 @@
     let isAdminLoggedIn = false;
     let selectedCityRef = '8d5a980d-391c-11dd-90d9-001a92567626';
     let cachedWarehouses = [];
+    let currentModalProductTitle = null;
 
     const NP_API_KEY = "";
 
@@ -440,14 +491,25 @@
         fetch('/api/products')
             .then(response => response.json())
             .then(products => {
-                let savedStock = JSON.parse(localStorage.getItem('products_stock_state') || '{}');
+                let savedConfig = JSON.parse(localStorage.getItem('products_admin_config') || '{}');
                 allProducts = products.map((item, idx) => {
                     let defaultInStock = true;
                     if (item.Naаlihie === '-' || item.Наличие === '-') {
                         defaultInStock = false;
                     }
-                    let finalStock = savedStock[item.title] !== undefined ? savedStock[item.title] : defaultInStock;
-                    return { ...item, inStock: finalStock, originalIndex: idx };
+
+                    let config = savedConfig[item.title] || {};
+                    let finalStock = config.inStock !== undefined ? config.inStock : defaultInStock;
+                    let finalPayments = config.payments || { online: true, cash: true, account: true };
+                    let finalDeliveries = config.deliveries || { np: true, pickup: true };
+
+                    return {
+                        ...item,
+                        inStock: finalStock,
+                        payments: finalPayments,
+                        deliveries: finalDeliveries,
+                        originalIndex: idx
+                    };
                 });
                 buildFiltersAndTiles(allProducts);
                 filterProducts();
@@ -495,9 +557,12 @@
         }
 
         products.forEach((item) => {
-            let imgHtml = `<div class="product-img-container"><span style="color: #aaa; font-size: 12px;">Без фото</span></div>`;
+            let safeTitle = item.title.replace(/'/g, "\\'");
+            let attrTitle = item.title.replace(/"/g, '&quot;');
+
+            let imgHtml = `<div class="product-img-container" onclick="openProductModal('${safeTitle}')"><span style="color: #aaa; font-size: 12px;">Без фото</span></div>`;
             if (item.image) {
-                imgHtml = `<div class="product-img-container"><img src="${item.image}" alt="${item.title}" class="product-img" onerror="this.parentElement.innerHTML='<span style=\\'color:#aaa;font-size:12px;\\'>Помилка фото</span>'"></div>`;
+                imgHtml = `<div class="product-img-container" onclick="openProductModal('${safeTitle}')"><img src="${item.image}" alt="${item.title}" class="product-img" onerror="this.parentElement.innerHTML='<span style=\\'color:#aaa;font-size:12px;\\'>Помилка фото</span>'"></div>`;
             }
 
             let stockBadgeHtml = item.inStock
@@ -505,8 +570,24 @@
                 : `<div class="stock-badge out-of-stock">✕ Немає в наявності</div>`;
 
             let batchCheckboxHtml = '';
+            let adminOptionsHtml = '';
+
             if (isAdminLoggedIn) {
-                batchCheckboxHtml = `<input type="checkbox" class="batch-checkbox" data-title="${item.title.replace(/"/g, '&quot;')}" style="display: block;">`;
+                batchCheckboxHtml = `<input type="checkbox" class="batch-checkbox" data-title="${attrTitle}" style="display: block;">`;
+
+                adminOptionsHtml = `
+                    <div class="admin-options-box">
+                        <strong style="color: #0d47a1; display:block; margin-bottom:4px;">Налаштування товару:</strong>
+                        <div style="font-weight:bold; color:#444; margin-top:4px;">Оплата:</div>
+                        <label><input type="checkbox" ${item.payments.online ? 'checked' : ''} onchange="updateProductConfig('${attrTitle}', 'online', this.checked)"> Онлайн картка</label>
+                        <label><input type="checkbox" ${item.payments.cash ? 'checked' : ''} onchange="updateProductConfig('${attrTitle}', 'cash', this.checked)"> Післяплата</label>
+                        <label><input type="checkbox" ${item.payments.account ? 'checked' : ''} onchange="updateProductConfig('${attrTitle}', 'account', this.checked)"> На рахунок</label>
+
+                        <div style="font-weight:bold; color:#444; margin-top:6px;">Доставка:</div>
+                        <label><input type="checkbox" ${item.deliveries.np ? 'checked' : ''} onchange="updateProductConfig('${attrTitle}', 'np', this.checked)"> Нова Пошта</label>
+                        <label><input type="checkbox" ${item.deliveries.pickup ? 'checked' : ''} onchange="updateProductConfig('${attrTitle}', 'pickup', this.checked)"> Самовивіз</label>
+                    </div>
+                `;
             }
 
             const card = document.createElement('div');
@@ -516,15 +597,113 @@
                 <div>
                     ${stockBadgeHtml}
                     ${imgHtml}
-                    <div class="product-title" title="${item.title}">${item.title}</div>
+                    <div class="product-title" title="${item.title}" onclick="openProductModal('${safeTitle}')">${item.title}</div>
+                    ${adminOptionsHtml}
                 </div>
                 <div>
                     <div class="product-price">${item.price} ₴</div>
-                    <button class="buy-btn" ${!item.inStock ? 'style="background:#ccc; border-color:#bbb; cursor:not-allowed;"' : ''} onclick="${item.inStock ? `addToCart('${item.title.replace(/'/g, "\\'")}', ${item.price})` : 'alert(\'Товар відсутній\')'}">Купити</button>
+                    <button class="buy-btn" ${!item.inStock ? 'style="background:#ccc; border-color:#bbb; cursor:not-allowed;"' : ''} onclick="${item.inStock ? `addToCart('${safeTitle}', ${item.price})` : 'alert(\'Товар відсутній\')'}">Купити</button>
                 </div>
             `;
             productGrid.appendChild(card);
         });
+    }
+
+    function updateProductConfig(title, field, value) {
+        const item = allProducts.find(p => p.title === title);
+        if (!item) return;
+
+        if (field === 'online' || field === 'cash' || field === 'account') {
+            item.payments[field] = value;
+        } else if (field === 'np' || field === 'pickup') {
+            item.deliveries[field] = value;
+        }
+        saveAdminConfigToStorage();
+    }
+
+    function updateModalConfig(field, value) {
+        if (!currentModalProductTitle) return;
+        updateProductConfig(currentModalProductTitle, field, value);
+    }
+
+    function saveAdminConfigToStorage() {
+        let configState = {};
+        allProducts.forEach(p => {
+            configState[p.title] = {
+                inStock: p.inStock,
+                payments: p.payments,
+                deliveries: p.deliveries
+            };
+        });
+        localStorage.setItem('products_admin_config', JSON.stringify(configState));
+    }
+
+    function openProductModal(title) {
+        const item = allProducts.find(p => p.title === title);
+        if (!item) return;
+
+        currentModalProductTitle = item.title;
+
+        const imgContainer = document.getElementById('modalProductImgContainer');
+        if (item.image) {
+            imgContainer.innerHTML = `<img src="${item.image}" alt="${item.title}" style="max-width:100%; max-height:100%; object-fit:contain; cursor:pointer;" onclick="openFullscreenImg('${item.image}')">`;
+        } else {
+            imgContainer.innerHTML = '<span style="color: #aaa; font-size: 14px;">Без фото</span>';
+        }
+
+        document.getElementById('modalProductTitle').innerText = item.title;
+        document.getElementById('modalProductPrice').innerText = item.price + ' ₴';
+
+        let cat = item.category || item.Тип_запчасти || 'Запчастини';
+        let brand = item.brand || item.Производитель || '';
+        document.getElementById('modalProductCategory').innerText = `Категорія: ${cat} ${brand ? ' | Виробник: ' + brand : ''}`;
+
+        const stockElem = document.getElementById('modalProductStock');
+        if (item.inStock) {
+            stockElem.innerHTML = '<span class="stock-badge in-stock" style="font-size:12px;">✓ В наявності</span>';
+        } else {
+            stockElem.innerHTML = '<span class="stock-badge out-of-stock" style="font-size:12px;">✕ Немає в наявності</span>';
+        }
+
+        // Керування адмін-блоком у модалці
+        const modalAdminBox = document.getElementById('modalAdminBox');
+        if (isAdminLoggedIn) {
+            modalAdminBox.style.display = 'block';
+            document.getElementById('modalPayOnline').checked = item.payments.online;
+            document.getElementById('modalPayCash').checked = item.payments.cash;
+            document.getElementById('modalPayAccount').checked = item.payments.account;
+            document.getElementById('modalDelivNp').checked = item.deliveries.np;
+            document.getElementById('modalDelivPickup').checked = item.deliveries.pickup;
+        } else {
+            modalAdminBox.style.display = 'none';
+        }
+
+        const buyBtn = document.getElementById('modalBuyBtn');
+        if (item.inStock) {
+            buyBtn.style.background = '#ffa41c';
+            buyBtn.style.borderColor = '#ff8f00';
+            buyBtn.style.cursor = 'pointer';
+            buyBtn.onclick = function() {
+                addToCart(item.title, item.price);
+                closeProductModal();
+            };
+        } else {
+            buyBtn.style.background = '#ccc';
+            buyBtn.style.borderColor = '#bbb';
+            buyBtn.style.cursor = 'not-allowed';
+            buyBtn.onclick = function() { alert('Товар відсутній'); };
+        }
+
+        document.getElementById('productModal').style.display = 'flex';
+    }
+
+    function closeProductModal() {
+        currentModalProductTitle = null;
+        document.getElementById('productModal').style.display = 'none';
+    }
+
+    function openFullscreenImg(src) {
+        window.open(src, '_blank');
     }
 
     function filterProducts() {
@@ -564,15 +743,9 @@
             const product = allProducts.find(p => p.title === title);
             if (product) product.inStock = status;
         });
-        saveStockStateToStorage();
+        saveAdminConfigToStorage();
         filterProducts();
         alert(`Успішно оновлено статус для ${checkedBoxes.length} товарів!`);
-    }
-
-    function saveStockStateToStorage() {
-        let stockState = {};
-        allProducts.forEach(p => { stockState[p.title] = p.inStock; });
-        localStorage.setItem('products_stock_state', JSON.stringify(stockState));
     }
 
     function uploadExcelToServer() {
@@ -691,6 +864,51 @@
     function openCheckout() {
         if (cart.length === 0) { alert('Кошик порожній!'); return; }
         closeCart();
+
+        let allowNp = true;
+        let allowPickup = true;
+        let allowOnline = true;
+        let allowCash = true;
+        let allowAccount = true;
+
+        cart.forEach(cartItem => {
+            let productObj = allProducts.find(p => p.title === cartItem.title);
+            if (productObj) {
+                if (productObj.deliveries && productObj.deliveries.np === false) allowNp = false;
+                if (productObj.deliveries && productObj.deliveries.pickup === false) allowPickup = false;
+                if (productObj.payments && productObj.payments.online === false) allowOnline = false;
+                if (productObj.payments && productObj.payments.cash === false) allowCash = false;
+                if (productObj.payments && productObj.payments.account === false) allowAccount = false;
+            }
+        });
+
+        const npCard = document.getElementById('npCard');
+        const pickupCard = document.getElementById('pickupCard');
+
+        npCard.style.display = allowNp ? 'flex' : 'none';
+        pickupCard.style.display = allowPickup ? 'flex' : 'none';
+
+        if (allowNp && !allowPickup) {
+            selectDeliveryType('np');
+        } else if (!allowNp && allowPickup) {
+            selectDeliveryType('pickup');
+        } else if (!allowNp && !allowPickup) {
+            alert('Увага: товари у кошику мають конфліктуючі методи доставки!');
+        }
+
+        const payOnline = document.getElementById('payCardOnline');
+        const payCash = document.getElementById('payCardCash');
+        const payAccount = document.getElementById('payCardAccount');
+
+        payOnline.style.display = allowOnline ? 'flex' : 'none';
+        payCash.style.display = allowCash ? 'flex' : 'none';
+        payAccount.style.display = allowAccount ? 'flex' : 'none';
+
+        let availablePayCards = [payOnline, payCash, payAccount].filter(card => card.style.display !== 'none');
+        if (availablePayCards.length > 0) {
+            selectPaymentCard(availablePayCards[0]);
+        }
+
         let totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
         document.getElementById('sidebarCount').innerText = `${totalCount} товар(ів)`;
         let listHtml = '', total = 0;
@@ -743,7 +961,7 @@
                     data.data[0].Addresses.forEach(city => {
                         let cityName = city.Present;
                         let cityRef = city.DeliveryCity;
-                        html += `<div class="suggestion-item" onclick="selectCityFromApi('${cityName.replace(/'/g, "\\'")}', '${cityRef}')">${cityName}</div>`;
+                        html += `<div class="suggestion-item" onclick="selectCityFromApi('${cityName.replace(/'/g, "\\\\anche")}', '${cityRef}')">${cityName}</div>`;
                     });
                     suggestionsBox.innerHTML = html;
                     suggestionsBox.style.display = 'block';
