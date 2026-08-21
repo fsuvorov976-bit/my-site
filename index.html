@@ -327,12 +327,6 @@
 
         <div class="content-area">
 
-            <!-- Плашка активного производителя прямо под баннером/каталогом -->
-            <div class="active-brand-badge-container" id="activeBrandBadge">
-                <div class="active-brand-badge-text">Вибраний виробник: <span id="badgeBrandName"></span></div>
-                <button class="btn-close-brand-badge" onclick="clearManufacturerFilter()" title="Скинути виробника">✕ Скинути</button>
-            </div>
-
             <div class="admin-panel" id="adminPanel">
                 <h3 style="color: #0d47a1; margin-bottom: 10px;">👑 Панель адміністратора</h3>
                 <p style="font-size: 13px; margin-bottom: 10px;">Позначте товари галочками в сітці нижче та змініть їхній статус:</p>
@@ -357,6 +351,12 @@
             <div class="top-brands-showcase">
                 <div class="top-brands-title">Популярні виробники сантехніки</div>
                 <div class="brands-tiles-grid" id="topBrandsGrid"></div>
+            </div>
+
+            <!-- Плашка активного производителя перенесена ПОД блок популярных производителей -->
+            <div class="active-brand-badge-container" id="activeBrandBadge">
+                <div class="active-brand-badge-text">Вибраний виробник: <span id="badgeBrandName"></span></div>
+                <button class="btn-close-brand-badge" onclick="clearManufacturerFilter()" title="Скинути виробника">✕ Скинути</button>
             </div>
 
             <div class="product-grid" id="productGrid"></div>
@@ -769,7 +769,6 @@
             }
         });
 
-        // Управление отображением плашки
         const badgeContainer = document.getElementById('activeBrandBadge');
         const badgeNameSpan = document.getElementById('badgeBrandName');
 
