@@ -696,7 +696,7 @@
     let currentModalProductTitle = null;
     let selectedSingleBrand = null;
 
-    let extraBrands = JSON.parse(localStorage.getItem('extra_brands') || '[]');
+    let extraBrands = [];
     let contactInfo = JSON.parse(localStorage.getItem('contact_info') || JSON.stringify({
         phone: '+380 (97) 431-82-19',
         hours: 'Пн-Пт: 09:00 – 18:00, Сб-Нд: вихідні',
@@ -741,41 +741,51 @@
         document.getElementById('contactAddressText').innerText = contactInfo.address;
     }
 
-    function loadProductsFromServer() {
-        fetch('/api/products')
-            .then(response => response.json())
-            .then(products => {
-                let savedConfig = JSON.parse(localStorage.getItem('products_admin_config') || '{}');
-                let deletedTitles = JSON.parse(localStorage.getItem('deleted_products') || '[]');
+    async function loadProductsFromServer() {
+        try {
+            const [productsResponse, brandsResponse] = await Promise.all([
+                fetch('/api/products'),
+                fetch('/api/brands')
+            ]);
 
-                let activeServerProducts = products.filter(item => !deletedTitles.includes(item.title));
+            const products = await productsResponse.json();
+            const serverBrands = await brandsResponse.json();
 
-                allProducts = activeServerProducts.map((item, idx) => {
-                    let defaultInStock = true;
-                    if (item.Naаlihie === '-' || item.Наличие === '-') {
-                        defaultInStock = false;
-                    }
+            let savedConfig = JSON.parse(localStorage.getItem('products_admin_config') || '{}');
+            let deletedTitles = JSON.parse(localStorage.getItem('deleted_products') || '[]');
 
-                    let imgUrl = item.image || item.photo || item.img || item.Фото || item.Картинка || '';
+            let activeServerProducts = products.filter(item => !deletedTitles.includes(item.title));
 
-                    let config = savedConfig[item.title] || {};
-                    let finalStock = config.inStock !== undefined ? config.inStock : defaultInStock;
-                    let finalPayments = config.payments || { online: true, cash: true, account: true };
-                    let finalDeliveries = config.deliveries || { np: true, postomat: true, courier: true, pickup: true };
+            allProducts = activeServerProducts.map((item, idx) => {
+                let defaultInStock = true;
+                if (item.Naаlihie === '-' || item.Наличие === '-') {
+                    defaultInStock = false;
+                }
 
-                    return {
-                        ...item,
-                        image: imgUrl,
-                        inStock: finalStock,
-                        payments: finalPayments,
-                        deliveries: finalDeliveries,
-                        originalIndex: idx
-                    };
-                });
-                buildFiltersAndTiles(allProducts);
-                filterProducts();
-            })
-            .catch(error => console.log('Помилка завантаження товарів:', error));
+                let imgUrl = item.image || item.photo || item.img || item.Фото || item.Картинка || '';
+
+                let config = savedConfig[item.title] || {};
+                let finalStock = config.inStock !== undefined ? config.inStock : defaultInStock;
+                let finalPayments = config.payments || { online: true, cash: true, account: true };
+                let finalDeliveries = config.deliveries || { np: true, postomat: true, courier: true, pickup: true };
+
+                return {
+                    ...item,
+                    image: imgUrl,
+                    inStock: finalStock,
+                    payments: finalPayments,
+                    deliveries: finalDeliveries,
+                    originalIndex: idx
+                };
+            });
+
+            extraBrands = Array.isArray(serverBrands) ? serverBrands : [];
+
+            buildFiltersAndTiles(allProducts);
+            filterProducts();
+        } catch (error) {
+            console.log('Помилка завантаження даних:', error);
+        }
     }
 
     function deleteProduct(title) {
@@ -796,10 +806,14 @@
     }
 
     function buildFiltersAndTiles(products) {
-        const serverBrands = [...new Set(products.map(p => p.brand || p.Производитель).filter(Boolean))];
-        const combinedBrands = [...new Set([...serverBrands, ...extraBrands])];
+        const productBrands = products
+            .map(p => p.brand || p.Производитель || p.Виробник || '')
+            .map(b => String(b).trim())
+            .filter(Boolean);
 
-        const categories = [...new Set(products.map(p => p.category || p.Тип_запчасти || 'Інше').filter(Boolean))];
+        const combinedBrands = [...new Set([...extraBrands, ...productBrands])];
+
+        const categories = [...new Set(products.map(p => p.category || p.Тип_запчасти || p.Тип_товара || 'Інше').filter(Boolean))];
 
         const catContainer = document.getElementById('categoryCheckboxes');
         catContainer.innerHTML = '';
@@ -811,7 +825,7 @@
         manufacturerScrollList.innerHTML = '';
         combinedBrands.forEach(brand => {
             let isActive = selectedSingleBrand === brand ? 'active' : '';
-            manufacturerScrollList.innerHTML += `<div class="manufacturer-option ${isActive}" onclick="selectSingleBrand('${brand}')">${brand}</div>`;
+            manufacturerScrollList.innerHTML += `<div class="manufacturer-option ${isActive}" onclick="selectSingleBrand('${brand.replace(/'/g, "\\'")}')">${brand}</div>`;
         });
 
         renderBrandsGrids(combinedBrands);
@@ -881,21 +895,61 @@
     function closeAddBrandModal() {
         document.getElementById('addBrandModal').style.display = 'none';
     }
-    function saveNewBrand() {
-        const val = document.getElementById('newBrandNameInput').value.trim();
-        if (!val) { alert('Введіть назву виробника!'); return; }
-        if (!extraBrands.includes(val)) {
-            extraBrands.push(val);
-            localStorage.setItem('extra_brands', JSON.stringify(extraBrands));
-            buildFiltersAndTiles(allProducts);
+    async function saveNewBrand() {
+        const input = document.getElementById('newBrandNameInput');
+        const val = input.value.trim();
+
+        if (!val) {
+            alert('Введіть назву виробника!');
+            return;
         }
-        closeAddBrandModal();
-    }
-    function deleteBrand(brandName) {
-        if (confirm(`Видалити виробника ${brandName}?`)) {
-            extraBrands = extraBrands.filter(b => b !== brandName);
-            localStorage.setItem('extra_brands', JSON.stringify(extraBrands));
+
+        try {
+            const response = await fetch('/api/brands', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: val })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                alert(data.error || 'Помилка збереження виробника');
+                return;
+            }
+
+            extraBrands = Array.isArray(data.brands) ? data.brands : [];
             buildFiltersAndTiles(allProducts);
+            input.value = '';
+            closeAddBrandModal();
+        } catch (error) {
+            console.error(error);
+            alert("Помилка з'єднання з сервером");
+        }
+    }
+
+    async function deleteBrand(brandName) {
+        if (!confirm(`Видалити виробника ${brandName}?`)) return;
+
+        try {
+            const response = await fetch('/api/brands', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: brandName })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                alert(data.error || 'Помилка видалення виробника');
+                return;
+            }
+
+            extraBrands = Array.isArray(data.brands) ? data.brands : [];
+            buildFiltersAndTiles(allProducts);
+        } catch (error) {
+            console.error(error);
+            alert("Помилка з'єднання з сервером");
         }
     }
 
@@ -1141,17 +1195,41 @@
         alert(`Успішно оновлено статус для ${checkedBoxes.length} товарів!`);
     }
 
-    function uploadExcelToServer() {
+    async function uploadExcelToServer() {
         const fileInput = document.getElementById('excelFile');
-        if (fileInput.files.length === 0) { alert('Оберіть Excel-файл!'); return; }
+        if (fileInput.files.length === 0) {
+            alert('Оберіть Excel-файл!');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('excelFile', fileInput.files[0]);
-        fetch('/api/upload', { method: 'POST', body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) { alert('Товари оновлено!'); loadProductsFromServer(); }
-                else alert('Помилка завантаження');
+
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
             });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                alert(data.error || 'Помилка завантаження');
+                return;
+            }
+
+            if (Array.isArray(data.brands)) {
+                extraBrands = data.brands;
+            }
+
+            await loadProductsFromServer();
+            fileInput.value = '';
+
+            alert(`Товари оновлено!\nТоварів: ${data.count || 0}\nВиробників: ${data.brandsCount || extraBrands.length}`);
+        } catch (error) {
+            console.error(error);
+            alert("Помилка з'єднання з сервером");
+        }
     }
 
     function switchTab(tabId, event) {

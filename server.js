@@ -16,20 +16,28 @@ const upload = multer({
     dest: UPLOAD_DIR
 });
 
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4';
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '6432307028';
+const TELEGRAM_BOT_TOKEN =
+    process.env.TELEGRAM_BOT_TOKEN || '';
+
+const TELEGRAM_CHAT_ID =
+    process.env.TELEGRAM_CHAT_ID || '';
 
 const ADMIN_CREDENTIALS = {
-    username: process.env.ADMIN_USERNAME || 'fsuvorov976@gmail.com',
-    password: process.env.ADMIN_PASSWORD || '0631023827Aa'
+    username:
+        process.env.ADMIN_USERNAME ||
+        '',
+    password:
+        process.env.ADMIN_PASSWORD ||
+        ''
 };
 
 function generate8DigitCode() {
     return Math.floor(
-        10000000 + Math.random() * 90000000
+        10000000 +
+        Math.random() * 90000000
     ).toString();
 }
 
@@ -39,33 +47,53 @@ function readJsonFile(file, fallback) {
             return fallback;
         }
 
-        const raw = fs.readFileSync(file, 'utf8').trim();
+        const raw =
+            fs.readFileSync(
+                file,
+                'utf8'
+            ).trim();
 
         if (!raw) {
             return fallback;
         }
 
         return JSON.parse(raw);
+
     } catch (error) {
-        console.error(`Ошибка чтения файла ${file}:`, error);
+        console.error(
+            `Ошибка чтения ${file}:`,
+            error
+        );
+
         return fallback;
     }
 }
 
 function writeJsonFile(file, data) {
-    const tempFile = `${file}.tmp`;
+    const tempFile =
+        `${file}.tmp`;
 
     fs.writeFileSync(
         tempFile,
-        JSON.stringify(data, null, 2),
+        JSON.stringify(
+            data,
+            null,
+            2
+        ),
         'utf8'
     );
 
-    fs.renameSync(tempFile, file);
+    fs.renameSync(
+        tempFile,
+        file
+    );
 }
 
 function normalizeBrand(value) {
-    if (value === null || value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
         return '';
     }
 
@@ -77,31 +105,44 @@ function uniqueBrands(brands) {
     const seen = new Set();
 
     for (const brand of brands) {
-        const normalized = normalizeBrand(brand);
+        const name =
+            normalizeBrand(brand);
 
-        if (!normalized) {
+        if (!name) {
             continue;
         }
 
-        if (normalized.toLowerCase() === 'не вказано') {
+        if (
+            name.toLowerCase() ===
+            'не вказано'
+        ) {
             continue;
         }
 
-        const key = normalized.toLowerCase();
+        const key =
+            name.toLowerCase();
 
         if (!seen.has(key)) {
             seen.add(key);
-            result.push(normalized);
+            result.push(name);
         }
     }
 
-    return result.sort((a, b) =>
-        a.localeCompare(b, 'uk')
+    return result.sort(
+        (a, b) =>
+            a.localeCompare(
+                b,
+                'uk'
+            )
     );
 }
 
 function getProducts() {
-    const products = readJsonFile(DATA_FILE, []);
+    const products =
+        readJsonFile(
+            DATA_FILE,
+            []
+        );
 
     return Array.isArray(products)
         ? products
@@ -109,13 +150,15 @@ function getProducts() {
 }
 
 function getBrands() {
-    const brands = readJsonFile(BRANDS_FILE, []);
+    const brands =
+        readJsonFile(
+            BRANDS_FILE,
+            []
+        );
 
-    if (!Array.isArray(brands)) {
-        return [];
-    }
-
-    return uniqueBrands(brands);
+    return Array.isArray(brands)
+        ? uniqueBrands(brands)
+        : [];
 }
 
 function saveBrands(brands) {
@@ -125,253 +168,364 @@ function saveBrands(brands) {
     );
 }
 
-function syncBrandsFromProducts(products) {
-    const currentBrands = getBrands();
+function getManufacturerFromProduct(product) {
+    if (!product) {
+        return '';
+    }
 
-    const productBrands = products
-        .map(product => {
-            if (!product) {
-                return '';
-            }
-
-            return (
-                product.Производитель ||
-                product.Виробник ||
-                product.brand ||
-                product.Brand ||
-                ''
-            );
-        })
-        .map(normalizeBrand)
-        .filter(Boolean);
-
-    const mergedBrands = uniqueBrands([
-        ...currentBrands,
-        ...productBrands
-    ]);
-
-    saveBrands(mergedBrands);
-
-    return mergedBrands;
+    return normalizeBrand(
+        product.Производитель ||
+        product.Виробник ||
+        product.Manufacturer ||
+        product.manufacturer ||
+        product.Brand ||
+        product.brand ||
+        ''
+    );
 }
 
-app.post('/api/login', (req, res) => {
-    const {
-        username,
-        password
-    } = req.body || {};
+function extractBrandsFromProducts(products) {
+    const brands = [];
 
-    if (
-        username === ADMIN_CREDENTIALS.username &&
-        password === ADMIN_CREDENTIALS.password
-    ) {
-        return res.json({
-            success: true
-        });
-    }
+    for (const product of products) {
+        const manufacturer =
+            getManufacturerFromProduct(
+                product
+            );
 
-    return res.json({
-        success: false,
-        error: 'Невірний логін або пароль'
-    });
-});
-
-app.get('/api/products', (req, res) => {
-    try {
-        const products = getProducts();
-
-        syncBrandsFromProducts(products);
-
-        return res.json(products);
-    } catch (error) {
-        console.error(
-            'Ошибка GET /api/products:',
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            error: 'Помилка читання товарів'
-        });
-    }
-});
-
-app.get('/api/brands', (req, res) => {
-    try {
-        const products = getProducts();
-
-        const brands =
-            syncBrandsFromProducts(products);
-
-        return res.json(brands);
-    } catch (error) {
-        console.error(
-            'Ошибка GET /api/brands:',
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            error: 'Помилка завантаження виробників'
-        });
-    }
-});
-
-app.post('/api/brands', (req, res) => {
-    try {
-        const name = normalizeBrand(
-            req.body && req.body.name
-        );
-
-        if (!name) {
-            return res.status(400).json({
-                success: false,
-                error: 'Назва виробника не може бути порожньою'
-            });
+        if (manufacturer) {
+            brands.push(
+                manufacturer
+            );
         }
-
-        const brands = getBrands();
-
-        const exists = brands.some(
-            brand =>
-                brand.toLowerCase() ===
-                name.toLowerCase()
-        );
-
-        if (!exists) {
-            brands.push(name);
-            saveBrands(brands);
-        }
-
-        return res.json({
-            success: true,
-            brand: name,
-            brands: getBrands()
-        });
-    } catch (error) {
-        console.error(
-            'Ошибка POST /api/brands:',
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            error: 'Помилка збереження виробника'
-        });
-    }
-});
-
-app.delete('/api/brands', (req, res) => {
-    try {
-        const name = normalizeBrand(
-            req.body && req.body.name
-        );
-
-        if (!name) {
-            return res.status(400).json({
-                success: false,
-                error: 'Не вказано виробника'
-            });
-        }
-
-        const brands = getBrands();
-
-        const filtered = brands.filter(
-            brand =>
-                brand.toLowerCase() !==
-                name.toLowerCase()
-        );
-
-        saveBrands(filtered);
-
-        return res.json({
-            success: true,
-            brands: getBrands()
-        });
-    } catch (error) {
-        console.error(
-            'Ошибка DELETE /api/brands:',
-            error
-        );
-
-        return res.status(500).json({
-            success: false,
-            error: 'Помилка видалення виробника'
-        });
-    }
-});
-
-app.post('/api/update-product', (req, res) => {
-    const updatedProduct = req.body || {};
-
-    if (!fs.existsSync(DATA_FILE)) {
-        return res.status(404).json({
-            success: false,
-            error: 'Файл з даними не знайдено'
-        });
     }
 
-    try {
-        const products = getProducts();
+    return uniqueBrands(
+        brands
+    );
+}
 
-        const index = products.findIndex(product =>
-            product.title === updatedProduct.title ||
-            product.id === updatedProduct.id ||
-            product.Код_товара === updatedProduct.Код_товара
-        );
+function syncBrandsFromProducts(products) {
+    const existingBrands =
+        getBrands();
 
-        if (index === -1) {
-            return res.status(404).json({
-                success: false,
-                error: 'Товар не знайдено'
-            });
-        }
-
-        products[index] = {
-            ...products[index],
-            ...updatedProduct
-        };
-
-        writeJsonFile(
-            DATA_FILE,
+    const productBrands =
+        extractBrandsFromProducts(
             products
         );
 
-        syncBrandsFromProducts(products);
+    const allBrands =
+        uniqueBrands([
+            ...existingBrands,
+            ...productBrands
+        ]);
 
-        return res.json({
-            success: true
-        });
-    } catch (error) {
-        console.error(
-            'Ошибка сохранения товара:',
-            error
-        );
+    saveBrands(
+        allBrands
+    );
 
-        return res.status(500).json({
-            success: false,
-            error: 'Помилка збереження товару'
-        });
-    }
-});
+    return allBrands;
+}
 
 app.post(
-    '/api/upload',
-    upload.single('excelFile'),
+    '/api/login',
     (req, res) => {
-        if (!req.file) {
-            return res.status(400).json({
+        const {
+            username,
+            password
+        } = req.body || {};
+
+        if (
+            username ===
+            ADMIN_CREDENTIALS.username &&
+            password ===
+            ADMIN_CREDENTIALS.password
+        ) {
+            return res.json({
+                success: true
+            });
+        }
+
+        return res.json({
+            success: false,
+            error:
+                'Невірний логін або пароль'
+        });
+    }
+);
+
+app.get(
+    '/api/products',
+    (req, res) => {
+        try {
+            const products =
+                getProducts();
+
+            syncBrandsFromProducts(
+                products
+            );
+
+            return res.json(
+                products
+            );
+
+        } catch (error) {
+            console.error(
+                'Ошибка получения товаров:',
+                error
+            );
+
+            return res.status(500).json({
                 success: false,
-                error: 'Файл не завантажено'
+                error:
+                    'Помилка читання товарів'
+            });
+        }
+    }
+);
+
+app.get(
+    '/api/brands',
+    (req, res) => {
+        try {
+            const products =
+                getProducts();
+
+            const brands =
+                syncBrandsFromProducts(
+                    products
+                );
+
+            return res.json(
+                brands
+            );
+
+        } catch (error) {
+            console.error(
+                'Ошибка получения производителей:',
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                error:
+                    'Помилка завантаження виробників'
+            });
+        }
+    }
+);
+
+app.post(
+    '/api/brands',
+    (req, res) => {
+        try {
+            const name =
+                normalizeBrand(
+                    req.body &&
+                    req.body.name
+                );
+
+            if (!name) {
+                return res.status(400).json({
+                    success: false,
+                    error:
+                        'Назва виробника не може бути порожньою'
+                });
+            }
+
+            const brands =
+                getBrands();
+
+            const exists =
+                brands.some(
+                    brand =>
+                        brand.toLowerCase() ===
+                        name.toLowerCase()
+                );
+
+            if (!exists) {
+                brands.push(name);
+
+                saveBrands(
+                    brands
+                );
+            }
+
+            return res.json({
+                success: true,
+                brand: name,
+                brands:
+                    getBrands()
+            });
+
+        } catch (error) {
+            console.error(
+                'Ошибка добавления производителя:',
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                error:
+                    'Помилка збереження виробника'
+            });
+        }
+    }
+);
+
+app.delete(
+    '/api/brands',
+    (req, res) => {
+        try {
+            const name =
+                normalizeBrand(
+                    req.body &&
+                    req.body.name
+                );
+
+            if (!name) {
+                return res.status(400).json({
+                    success: false,
+                    error:
+                        'Не вказано виробника'
+                });
+            }
+
+            const brands =
+                getBrands();
+
+            const filtered =
+                brands.filter(
+                    brand =>
+                        brand.toLowerCase() !==
+                        name.toLowerCase()
+                );
+
+            saveBrands(
+                filtered
+            );
+
+            return res.json({
+                success: true,
+                brands:
+                    getBrands()
+            });
+
+        } catch (error) {
+            console.error(
+                'Ошибка удаления производителя:',
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                error:
+                    'Помилка видалення виробника'
+            });
+        }
+    }
+);
+
+app.post(
+    '/api/update-product',
+    (req, res) => {
+        const updatedProduct =
+            req.body || {};
+
+        if (
+            !fs.existsSync(
+                DATA_FILE
+            )
+        ) {
+            return res.status(404).json({
+                success: false,
+                error:
+                    'Файл з даними не знайдено'
             });
         }
 
         try {
-            const oldProducts = getProducts();
-            const oldBrands = getBrands();
+            const products =
+                getProducts();
+
+            const index =
+                products.findIndex(
+                    product =>
+                        product.title ===
+                        updatedProduct.title ||
+                        product.id ===
+                        updatedProduct.id ||
+                        product.Код_товара ===
+                        updatedProduct.Код_товара
+                );
+
+            if (index === -1) {
+                return res.status(404).json({
+                    success: false,
+                    error:
+                        'Товар не знайдено'
+                });
+            }
+
+            products[index] = {
+                ...products[index],
+                ...updatedProduct
+            };
+
+            writeJsonFile(
+                DATA_FILE,
+                products
+            );
+
+            syncBrandsFromProducts(
+                products
+            );
+
+            return res.json({
+                success: true
+            });
+
+        } catch (error) {
+            console.error(
+                'Ошибка обновления товара:',
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                error:
+                    'Помилка збереження товару'
+            });
+        }
+    }
+);
+
+app.post(
+    '/api/upload',
+    upload.single(
+        'excelFile'
+    ),
+    (req, res) => {
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    'Файл не завантажено'
+            });
+        }
+
+        try {
+            const oldProducts =
+                getProducts();
+
+            const oldBrands =
+                getBrands();
 
             const workbook =
-                xlsx.readFile(req.file.path);
+                xlsx.readFile(
+                    req.file.path
+                );
 
             if (
                 !workbook.SheetNames ||
@@ -382,175 +536,310 @@ app.post(
                 );
             }
 
-            const worksheet =
+            let worksheet =
                 workbook.Sheets[
                     workbook.SheetNames[0]
                     ];
 
-            const jsonRows =
+            let rows =
                 xlsx.utils.sheet_to_json(
                     worksheet,
                     {
-                        defval: ''
+                        defval: '',
+                        raw: false
                     }
                 );
 
-            const products = jsonRows.map(
-                (row, index) => {
-                    const title =
-                        row['Название_позиции'] ||
-                        row['Название_позиции_укр'] ||
-                        row['Назва'] ||
-                        row['Title'] ||
-                        'Без назви';
+            if (
+                rows.length === 0 &&
+                workbook.SheetNames.length > 1
+            ) {
+                worksheet =
+                    workbook.Sheets[
+                        workbook.SheetNames[1]
+                        ];
 
-                    const parsedPrice =
-                        parseFloat(
+                rows =
+                    xlsx.utils.sheet_to_json(
+                        worksheet,
+                        {
+                            defval: '',
+                            raw: false
+                        }
+                    );
+            }
+
+            const products =
+                rows.map(
+                    (row, index) => {
+
+                        const title =
+                            row['Название_позиции'] ||
+                            row['Название_позиции_укр'] ||
+                            row['Назва'] ||
+                            row['Title'] ||
+                            'Без назви';
+
+                        const priceValue =
                             String(
                                 row['Цена'] ||
                                 row['Цена_от'] ||
                                 row['Ціна'] ||
                                 row['Price'] ||
-                                0
-                            ).replace(',', '.')
-                        );
-
-                    const price =
-                        Number.isFinite(parsedPrice)
-                            ? parsedPrice
-                            : 0;
-
-                    const imgUrl =
-                        row['Ссылка_изображения'] ||
-                        row['Изображение'] ||
-                        row['Фото'] ||
-                        row['Image'] ||
-                        '';
-
-                    const firstImg =
-                        imgUrl
-                            ? String(imgUrl)
-                                .split(',')[0]
-                                .trim()
-                            : '';
-
-                    let productCode =
-                        row['Код_товара'] ||
-                        row['Идентификатор_товара'];
-
-                    if (
-                        !productCode ||
-                        String(productCode).trim() === ''
-                    ) {
-                        productCode =
-                            generate8DigitCode();
-                    }
-
-                    productCode =
-                        String(productCode).trim();
-
-                    const existingProduct =
-                        oldProducts.find(product =>
-                            String(
-                                product.Код_товара || ''
-                            ).trim() === productCode ||
-                            String(
-                                product.title || ''
-                            ).trim() === String(title).trim()
-                        );
-
-                    let productType =
-                        row['Тип_товара'] ||
-                        row['Тип товару'];
-
-                    if (
-                        !productType ||
-                        String(productType).trim() === ''
-                    ) {
-                        productType =
-                            row['Название_группы'] ||
-                            row['Назва_групи'] ||
-                            (
-                                existingProduct
-                                    ? existingProduct.Тип_товара
-                                    : 'Не вказано'
-                            );
-                    }
-
-                    let manufacturer =
-                        row['Производитель'] ||
-                        row['Виробник'] ||
-                        row['Бренд'] ||
-                        row['Brand'];
-
-                    if (
-                        !manufacturer ||
-                        String(manufacturer).trim() === ''
-                    ) {
-                        manufacturer =
-                            existingProduct &&
-                            (
-                                existingProduct.Производитель ||
-                                existingProduct.Виробник ||
-                                existingProduct.brand
+                                '0'
                             )
-                                ? (
-                                    existingProduct.Производитель ||
-                                    existingProduct.Виробник ||
-                                    existingProduct.brand
+                                .replace(
+                                    /\s/g,
+                                    ''
                                 )
-                                : 'Не вказано';
+                                .replace(
+                                    ',',
+                                    '.'
+                                );
+
+                        const parsedPrice =
+                            parseFloat(
+                                priceValue
+                            );
+
+                        const price =
+                            Number.isFinite(
+                                parsedPrice
+                            )
+                                ? parsedPrice
+                                : 0;
+
+                        const imgUrl =
+                            row[
+                                'Ссылка_изображения'
+                                ] ||
+                            row[
+                                'Изображение'
+                                ] ||
+                            row[
+                                'Фото'
+                                ] ||
+                            row[
+                                'Image'
+                                ] ||
+                            '';
+
+                        const firstImg =
+                            imgUrl
+                                ? String(
+                                    imgUrl
+                                )
+                                    .split(
+                                        ','
+                                    )[0]
+                                    .trim()
+                                : '';
+
+                        let productCode =
+                            row[
+                                'Код_товара'
+                                ] ||
+                            row[
+                                'Идентификатор_товара'
+                                ];
+
+                        if (
+                            !productCode ||
+                            String(
+                                productCode
+                            ).trim() === ''
+                        ) {
+                            productCode =
+                                generate8DigitCode();
+                        }
+
+                        productCode =
+                            String(
+                                productCode
+                            ).trim();
+
+                        const existingProduct =
+                            oldProducts.find(
+                                product => {
+
+                                    const oldCode =
+                                        String(
+                                            product.Код_товара ||
+                                            product.Идентификатор_товара ||
+                                            ''
+                                        ).trim();
+
+                                    const oldTitle =
+                                        String(
+                                            product.title ||
+                                            product.Название_позиции ||
+                                            ''
+                                        ).trim();
+
+                                    return (
+                                        oldCode ===
+                                        productCode ||
+                                        oldTitle ===
+                                        String(
+                                            title
+                                        ).trim()
+                                    );
+                                }
+                            );
+
+                        let productType =
+                            row[
+                                'Тип_товара'
+                                ] ||
+                            row[
+                                'Тип товару'
+                                ];
+
+                        if (
+                            !productType ||
+                            String(
+                                productType
+                            ).trim() === ''
+                        ) {
+                            productType =
+                                row[
+                                    'Название_группы'
+                                    ] ||
+                                row[
+                                    'Назва_групи'
+                                    ] ||
+                                (
+                                    existingProduct &&
+                                    (
+                                        existingProduct.Тип_товара ||
+                                        existingProduct['Тип товару']
+                                    )
+                                ) ||
+                                'Не вказано';
+                        }
+
+                        let manufacturer =
+                            row[
+                                'Производитель'
+                                ] ||
+                            row[
+                                'Виробник'
+                                ] ||
+                            row[
+                                'Manufacturer'
+                                ] ||
+                            row[
+                                'Производитель_товара'
+                                ] ||
+                            row[
+                                'Бренд'
+                                ] ||
+                            row[
+                                'Brand'
+                                ] ||
+                            '';
+
+                        if (
+                            !manufacturer ||
+                            String(
+                                manufacturer
+                            ).trim() === ''
+                        ) {
+                            manufacturer =
+                                getManufacturerFromProduct(
+                                    existingProduct
+                                );
+                        }
+
+                        manufacturer =
+                            normalizeBrand(
+                                manufacturer
+                            );
+
+                        const product = {
+                            ...row,
+
+                            id:
+                                index + 1,
+
+                            title:
+                                String(
+                                    title
+                                ),
+
+                            price,
+
+                            image:
+                            firstImg,
+
+                            Код_товара:
+                            productCode,
+
+                            Тип_товара:
+                                String(
+                                    productType ||
+                                    'Не вказано'
+                                ),
+
+                            Производитель:
+                                manufacturer ||
+                                'Не вказано'
+                        };
+
+                        return product;
                     }
+                );
 
-                    manufacturer =
+            const manufacturersFromExcel =
+                rows
+                    .map(row =>
                         normalizeBrand(
-                            manufacturer
-                        ) || 'Не вказано';
+                            row[
+                                'Производитель'
+                                ] ||
+                            row[
+                                'Виробник'
+                                ] ||
+                            row[
+                                'Manufacturer'
+                                ] ||
+                            row[
+                                'Производитель_товара'
+                                ] ||
+                            row[
+                                'Бренд'
+                                ] ||
+                            row[
+                                'Brand'
+                                ] ||
+                            ''
+                        )
+                    )
+                    .filter(Boolean);
 
-                    return {
-                        ...row,
-                        id: index + 1,
-                        title: String(title),
-                        price,
-                        image: firstImg,
-                        Код_товара: productCode,
-                        Тип_товара: String(
-                            productType ||
-                            'Не вказано'
-                        ),
-                        Производитель:
-                        manufacturer
-                    };
-                }
-            );
+            const manufacturersFromProducts =
+                products
+                    .map(
+                        getManufacturerFromProduct
+                    )
+                    .filter(Boolean);
 
             const manufacturersFromOldProducts =
                 oldProducts
-                    .map(product =>
-                        product &&
-                        (
-                            product.Производитель ||
-                            product.Виробник ||
-                            product.brand ||
-                            product.Brand
-                        )
+                    .map(
+                        getManufacturerFromProduct
                     )
-                    .map(normalizeBrand)
-                    .filter(Boolean);
-
-            const manufacturersFromNewProducts =
-                products
-                    .map(product =>
-                        product.Производитель
-                    )
-                    .map(normalizeBrand)
                     .filter(Boolean);
 
             const allBrands =
                 uniqueBrands([
                     ...oldBrands,
+
                     ...manufacturersFromOldProducts,
-                    ...manufacturersFromNewProducts
+
+                    ...manufacturersFromExcel,
+
+                    ...manufacturersFromProducts
                 ]);
 
             writeJsonFile(
@@ -558,26 +847,36 @@ app.post(
                 products
             );
 
-            saveBrands(allBrands);
+            saveBrands(
+                allBrands
+            );
 
             try {
                 fs.unlinkSync(
                     req.file.path
                 );
-            } catch (unlinkError) {
+            } catch (error) {
                 console.warn(
-                    'Не удалось удалить временный Excel:',
-                    unlinkError.message
+                    'Не удалось удалить временный файл:',
+                    error.message
                 );
             }
 
             return res.json({
                 success: true,
-                count: products.length,
-                brandsCount: allBrands.length
+
+                count:
+                products.length,
+
+                brandsCount:
+                allBrands.length,
+
+                brands:
+                allBrands
             });
 
         } catch (error) {
+
             console.error(
                 'Ошибка обработки Excel:',
                 error
@@ -586,7 +885,9 @@ app.post(
             try {
                 if (
                     req.file &&
-                    fs.existsSync(req.file.path)
+                    fs.existsSync(
+                        req.file.path
+                    )
                 ) {
                     fs.unlinkSync(
                         req.file.path
@@ -596,8 +897,10 @@ app.post(
 
             return res.status(500).json({
                 success: false,
+
                 error:
                     'Помилка при обробці Excel файлу',
+
                 details:
                 error.message
             });
@@ -605,153 +908,164 @@ app.post(
     }
 );
 
-app.post('/api/order', async (req, res) => {
-    const {
-        lastName,
-        firstName,
-        phone,
-        cart,
-        total,
-        delivery,
-        deliveryDetails,
-        payment
-    } = req.body || {};
+app.post(
+    '/api/order',
+    async (req, res) => {
 
-    let message =
-        `🛒 <b>Нове замовлення!</b>\n\n`;
+        const {
+            lastName,
+            firstName,
+            phone,
+            cart,
+            total,
+            delivery,
+            deliveryDetails,
+            payment
+        } = req.body || {};
 
-    message +=
-        `👤 <b>Клієнт:</b> ` +
-        `${lastName || ''} ` +
-        `${firstName || ''}\n`;
+        let message =
+            `🛒 <b>Нове замовлення!</b>\n\n`;
 
-    message +=
-        `📞 <b>Телефон:</b> ` +
-        `${phone || ''}\n`;
+        message +=
+            `👤 <b>Клієнт:</b> ` +
+            `${lastName || ''} ` +
+            `${firstName || ''}\n`;
 
-    message +=
-        `🚚 <b>Доставка:</b> ` +
-        `${delivery || ''}\n`;
+        message +=
+            `📞 <b>Телефон:</b> ` +
+            `${phone || ''}\n`;
 
-    message +=
-        `📍 <b>Відділення/Адреса:</b> ` +
-        `${deliveryDetails || 'Не вказано'}\n`;
+        message +=
+            `🚚 <b>Доставка:</b> ` +
+            `${delivery || ''}\n`;
 
-    message +=
-        `💳 <b>Оплата:</b> ` +
-        `${payment || ''}\n\n`;
+        message +=
+            `📍 <b>Відділення/Адреса:</b> ` +
+            `${deliveryDetails || 'Не вказано'}\n`;
 
-    message +=
-        `📦 <b>Товари:</b>\n`;
+        message +=
+            `💳 <b>Оплата:</b> ` +
+            `${payment || ''}\n\n`;
 
-    if (
-        cart &&
-        Array.isArray(cart)
-    ) {
-        cart.forEach(
-            (item, index) => {
-                message +=
-                    `${index + 1}. ` +
-                    `${item.title || ''} — ` +
-                    `${item.price || 0} ₴\n`;
-            }
-        );
-    }
+        message +=
+            `📦 <b>Товари:</b>\n`;
 
-    message +=
-        `\n💰 <b>Разом до сплати:</b> ` +
-        `${total || 0} ₴`;
+        if (
+            cart &&
+            Array.isArray(cart)
+        ) {
+            cart.forEach(
+                (item, index) => {
 
-    if (
-        !TELEGRAM_BOT_TOKEN ||
-        !TELEGRAM_CHAT_ID
-    ) {
-        return res.status(500).json({
-            success: false,
-            error:
-                'Telegram не налаштовано на сервері'
-        });
-    }
-
-    try {
-        const fetch =
-            (await import('node-fetch')).default;
-
-        const telegramResponse =
-            await fetch(
-                `https://api.telegram.org/` +
-                `bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type':
-                            'application/json'
-                    },
-                    body: JSON.stringify({
-                        chat_id:
-                        TELEGRAM_CHAT_ID,
-                        text:
-                        message,
-                        parse_mode:
-                            'HTML'
-                    })
+                    message +=
+                        `${index + 1}. ` +
+                        `${item.title || ''} — ` +
+                        `${item.price || 0} ₴\n`;
                 }
             );
+        }
 
-        const result =
-            await telegramResponse.json();
+        message +=
+            `\n💰 <b>Разом до сплати:</b> ` +
+            `${total || 0} ₴`;
 
-        if (result.ok) {
-            return res.json({
-                success: true
+        if (
+            !TELEGRAM_BOT_TOKEN ||
+            !TELEGRAM_CHAT_ID
+        ) {
+            return res.status(500).json({
+                success: false,
+                error:
+                    'Telegram не налаштовано на сервері'
             });
         }
 
-        console.error(
-            'Telegram API error:',
-            result
-        );
+        try {
 
-        return res.json({
-            success: false,
-            error:
-            result.description
-        });
+            const fetch =
+                (
+                    await import(
+                        'node-fetch'
+                        )
+                ).default;
 
-    } catch (error) {
-        console.error(
-            'Ошибка отправки в Telegram:',
-            error
-        );
+            const telegramResponse =
+                await fetch(
+                    `https://api.telegram.org/` +
+                    `bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+                    {
+                        method: 'POST',
 
-        return res.status(500).json({
-            success: false,
-            error:
-            error.message
-        });
+                        headers: {
+                            'Content-Type':
+                                'application/json'
+                        },
+
+                        body:
+                            JSON.stringify({
+                                chat_id:
+                                TELEGRAM_CHAT_ID,
+
+                                text:
+                                message,
+
+                                parse_mode:
+                                    'HTML'
+                            })
+                    }
+                );
+
+            const result =
+                await telegramResponse.json();
+
+            if (result.ok) {
+                return res.json({
+                    success: true
+                });
+            }
+
+            return res.json({
+                success: false,
+                error:
+                result.description
+            });
+
+        } catch (error) {
+
+            console.error(
+                'Ошибка Telegram:',
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                error:
+                error.message
+            });
+        }
     }
-});
+);
 
-if (!fs.existsSync(BRANDS_FILE)) {
+if (
+    !fs.existsSync(
+        BRANDS_FILE
+    )
+) {
+
     const products =
         getProducts();
 
-    const initialBrands =
-        products
-            .map(product =>
-                product &&
-                (
-                    product.Производитель ||
-                    product.Виробник ||
-                    product.brand ||
-                    product.Brand
-                )
-            )
-            .map(normalizeBrand)
-            .filter(Boolean);
+    const brands =
+        extractBrandsFromProducts(
+            products
+        );
 
-    saveBrands(initialBrands);
+    saveBrands(
+        brands
+    );
+
 } else {
+
     syncBrandsFromProducts(
         getProducts()
     );
@@ -763,14 +1077,17 @@ const PORT =
 app.listen(
     PORT,
     () => {
+
         console.log(
-            `Сервер запущено! ` +
-            `Відкрийте: http://localhost:${PORT}`
+            `Сервер запущено: http://localhost:${PORT}`
         );
 
         console.log(
-            `Производителей сохранено: ` +
-            `${getBrands().length}`
+            `Товаров: ${getProducts().length}`
+        );
+
+        console.log(
+            `Производителей: ${getBrands().length}`
         );
     }
 );
