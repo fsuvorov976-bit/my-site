@@ -8,7 +8,6 @@ const app = express();
 
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
 const DATA_FILE = path.join(__dirname, 'products.json');
-const BRANDS_FILE = path.join(__dirname, 'brands.json');
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
@@ -217,60 +216,12 @@ function writeJsonFile(file, data) {
     );
 }
 
-function normalizeBrand(value) {
-    if (
-        value === null ||
-        value === undefined
-    ) {
-        return '';
-    }
-
-    return String(value).trim();
-}
-
-function uniqueBrands(brands) {
-    const result = [];
-    const seen = new Set();
-
-    for (const brand of brands) {
-        const name =
-            normalizeBrand(brand);
-
-        if (!name) {
-            continue;
-        }
-
-        if (
-            name.toLowerCase() ===
-            'не вказано'
-        ) {
-            continue;
-        }
-
-        const key =
-            name.toLowerCase();
-
-        if (!seen.has(key)) {
-            seen.add(key);
-            result.push(name);
-        }
-    }
-
-    return result.sort(
-        (a, b) =>
-            a.localeCompare(
-                b,
-                'uk'
-            )
-    );
-}
-
 function getManufacturerFromProduct(product) {
     if (!product) {
         return '';
     }
 
-    return normalizeBrand(
+    return String(
         product.Производитель ||
         product.Виробник ||
         product.Manufacturer ||
@@ -278,7 +229,44 @@ function getManufacturerFromProduct(product) {
         product.Brand ||
         product.brand ||
         ''
-    );
+    ).trim();
+}
+
+function ensureProductManufacturers(products) {
+    if (!Array.isArray(products)) {
+        return {
+            products,
+            changed: false
+        };
+    }
+
+    let changed = false;
+
+    for (const product of products) {
+        if (!product || typeof product !== 'object') {
+            continue;
+        }
+
+        const manufacturer =
+            getManufacturerFromProduct(product) ||
+            'Не вказано';
+
+        if (
+            String(
+                product.Производитель || ''
+            ).trim() !== manufacturer
+        ) {
+            product.Производитель =
+                manufacturer;
+
+            changed = true;
+        }
+    }
+
+    return {
+        products,
+        changed
+    };
 }
 
 function getProducts() {
@@ -292,108 +280,28 @@ function getProducts() {
         return [];
     }
 
-    const result =
+    const codes =
         ensureProductCodes(
             products
         );
 
-    let changed =
-        result.changed;
+    const manufacturers =
+        ensureProductManufacturers(
+            codes.products
+        );
 
-    for (const product of result.products) {
-        const manufacturer =
-            getManufacturerFromProduct(
-                product
-            );
-
-        const finalManufacturer =
-            manufacturer ||
-            'Не вказано';
-
-        if (
-            String(
-                product.Производитель ||
-                ''
-            ).trim() !==
-            finalManufacturer
-        ) {
-            product.Производитель =
-                finalManufacturer;
-
-            changed = true;
-        }
-    }
+    const changed =
+        codes.changed ||
+        manufacturers.changed;
 
     if (changed) {
         writeJsonFile(
             DATA_FILE,
-            result.products
+            manufacturers.products
         );
     }
 
-    return result.products;
-}
-
-function getBrands() {
-    const brands =
-        readJsonFile(
-            BRANDS_FILE,
-            []
-        );
-
-    return Array.isArray(brands)
-        ? uniqueBrands(brands)
-        : [];
-}
-
-function saveBrands(brands) {
-    writeJsonFile(
-        BRANDS_FILE,
-        uniqueBrands(brands)
-    );
-}
-
-function extractBrandsFromProducts(products) {
-    const brands = [];
-
-    for (const product of products) {
-        const manufacturer =
-            getManufacturerFromProduct(
-                product
-            );
-
-        if (manufacturer) {
-            brands.push(
-                manufacturer
-            );
-        }
-    }
-
-    return uniqueBrands(
-        brands
-    );
-}
-
-function syncBrandsFromProducts(products) {
-    const existingBrands =
-        getBrands();
-
-    const productBrands =
-        extractBrandsFromProducts(
-            products
-        );
-
-    const allBrands =
-        uniqueBrands([
-            ...existingBrands,
-            ...productBrands
-        ]);
-
-    saveBrands(
-        allBrands
-    );
-
-    return allBrands;
+    return manufacturers.products;
 }
 
 app.post(
@@ -430,10 +338,6 @@ app.get(
             const products =
                 getProducts();
 
-            syncBrandsFromProducts(
-                products
-            );
-
             return res.json(
                 products
             );
@@ -448,148 +352,6 @@ app.get(
                 success: false,
                 error:
                     'Помилка читання товарів'
-            });
-        }
-    }
-);
-
-app.get(
-    '/api/brands',
-    (req, res) => {
-        try {
-            const products =
-                getProducts();
-
-            const brands =
-                syncBrandsFromProducts(
-                    products
-                );
-
-            return res.json(
-                brands
-            );
-
-        } catch (error) {
-            console.error(
-                'Ошибка получения производителей:',
-                error
-            );
-
-            return res.status(500).json({
-                success: false,
-                error:
-                    'Помилка завантаження виробників'
-            });
-        }
-    }
-);
-
-app.post(
-    '/api/brands',
-    (req, res) => {
-        try {
-            const name =
-                normalizeBrand(
-                    req.body &&
-                    req.body.name
-                );
-
-            if (!name) {
-                return res.status(400).json({
-                    success: false,
-                    error:
-                        'Назва виробника не може бути порожньою'
-                });
-            }
-
-            const brands =
-                getBrands();
-
-            const exists =
-                brands.some(
-                    brand =>
-                        brand.toLowerCase() ===
-                        name.toLowerCase()
-                );
-
-            if (!exists) {
-                brands.push(name);
-
-                saveBrands(
-                    brands
-                );
-            }
-
-            return res.json({
-                success: true,
-                brand: name,
-                brands:
-                    getBrands()
-            });
-
-        } catch (error) {
-            console.error(
-                'Ошибка добавления производителя:',
-                error
-            );
-
-            return res.status(500).json({
-                success: false,
-                error:
-                    'Помилка збереження виробника'
-            });
-        }
-    }
-);
-
-app.delete(
-    '/api/brands',
-    (req, res) => {
-        try {
-            const name =
-                normalizeBrand(
-                    req.body &&
-                    req.body.name
-                );
-
-            if (!name) {
-                return res.status(400).json({
-                    success: false,
-                    error:
-                        'Не вказано виробника'
-                });
-            }
-
-            const brands =
-                getBrands();
-
-            const filtered =
-                brands.filter(
-                    brand =>
-                        brand.toLowerCase() !==
-                        name.toLowerCase()
-                );
-
-            saveBrands(
-                filtered
-            );
-
-            return res.json({
-                success: true,
-                brands:
-                    getBrands()
-            });
-
-        } catch (error) {
-            console.error(
-                'Ошибка удаления производителя:',
-                error
-            );
-
-            return res.status(500).json({
-                success: false,
-                error:
-                    'Помилка видалення виробника'
             });
         }
     }
@@ -680,10 +442,6 @@ app.post(
 
             writeJsonFile(
                 DATA_FILE,
-                remaining
-            );
-
-            syncBrandsFromProducts(
                 remaining
             );
 
@@ -785,20 +543,19 @@ app.post(
             products[index] = {
                 ...products[index],
                 ...updatedProduct,
+
                 Код_товара:
                 permanentCode,
+
                 productCode:
                 permanentCode,
+
                 Производитель:
                 newManufacturer
             };
 
             writeJsonFile(
                 DATA_FILE,
-                products
-            );
-
-            syncBrandsFromProducts(
                 products
             );
 
@@ -843,9 +600,6 @@ app.post(
         try {
             const oldProducts =
                 getProducts();
-
-            const oldBrands =
-                getBrands();
 
             const usedCodes =
                 new Set();
@@ -1116,9 +870,9 @@ app.post(
                         }
 
                         manufacturer =
-                            normalizeBrand(
-                                manufacturer
-                            );
+                            String(
+                                manufacturer || ''
+                            ).trim();
 
                         const product = {
                             ...row,
@@ -1165,63 +919,9 @@ app.post(
             const finalProducts =
                 ensured.products;
 
-            const manufacturersFromExcel =
-                rows
-                    .map(
-                        row =>
-                            normalizeBrand(
-                                row[
-                                    'Производитель'
-                                    ] ||
-                                row[
-                                    'Виробник'
-                                    ] ||
-                                row[
-                                    'Manufacturer'
-                                    ] ||
-                                row[
-                                    'Производитель_товара'
-                                    ] ||
-                                row[
-                                    'Бренд'
-                                    ] ||
-                                row[
-                                    'Brand'
-                                    ] ||
-                                ''
-                            )
-                    )
-                    .filter(Boolean);
-
-            const manufacturersFromProducts =
-                finalProducts
-                    .map(
-                        getManufacturerFromProduct
-                    )
-                    .filter(Boolean);
-
-            const manufacturersFromOldProducts =
-                oldProducts
-                    .map(
-                        getManufacturerFromProduct
-                    )
-                    .filter(Boolean);
-
-            const allBrands =
-                uniqueBrands([
-                    ...oldBrands,
-                    ...manufacturersFromOldProducts,
-                    ...manufacturersFromExcel,
-                    ...manufacturersFromProducts
-                ]);
-
             writeJsonFile(
                 DATA_FILE,
                 finalProducts
-            );
-
-            saveBrands(
-                allBrands
             );
 
             try {
@@ -1239,13 +939,7 @@ app.post(
                 success: true,
 
                 count:
-                finalProducts.length,
-
-                brandsCount:
-                allBrands.length,
-
-                brands:
-                allBrands
+                finalProducts.length
             });
 
         } catch (error) {
@@ -1432,31 +1126,6 @@ app.post(
     }
 );
 
-if (
-    !fs.existsSync(
-        BRANDS_FILE
-    )
-) {
-
-    const products =
-        getProducts();
-
-    const brands =
-        extractBrandsFromProducts(
-            products
-        );
-
-    saveBrands(
-        brands
-    );
-
-} else {
-
-    syncBrandsFromProducts(
-        getProducts()
-    );
-}
-
 const PORT =
     process.env.PORT || 3000;
 
@@ -1470,10 +1139,6 @@ app.listen(
 
         console.log(
             `Товаров: ${getProducts().length}`
-        );
-
-        console.log(
-            `Производителей: ${getBrands().length}`
         );
     }
 );
