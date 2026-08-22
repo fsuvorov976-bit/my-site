@@ -20,18 +20,18 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
 
 const TELEGRAM_BOT_TOKEN =
-    process.env.TELEGRAM_BOT_TOKEN || '';
+    process.env.TELEGRAM_BOT_TOKEN || '8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4';
 
 const TELEGRAM_CHAT_ID =
-    process.env.TELEGRAM_CHAT_ID || '';
+    process.env.TELEGRAM_CHAT_ID || '6432307028';
 
 const ADMIN_CREDENTIALS = {
     username:
         process.env.ADMIN_USERNAME ||
-        '',
+        'fsuvorov976@gmail.com',
     password:
         process.env.ADMIN_PASSWORD ||
-        ''
+        '0631023827Aa'
 };
 
 
