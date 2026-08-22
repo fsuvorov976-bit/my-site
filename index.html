@@ -890,6 +890,50 @@
             font-weight: bold;
             text-align: left;
         }
+
+        .product-code {
+            font-size: 11px;
+            color: #666;
+            margin: -4px 0 10px;
+            text-align: left;
+            font-family: monospace;
+        }
+
+        .fullscreen-image-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            padding: 30px;
+            cursor: zoom-out;
+        }
+
+        .fullscreen-image-overlay.visible {
+            display: flex;
+        }
+
+        .fullscreen-image-overlay img {
+            max-width: 95vw;
+            max-height: 92vh;
+            object-fit: contain;
+            border-radius: 6px;
+            cursor: default;
+        }
+
+        .fullscreen-image-close {
+            position: absolute;
+            top: 15px;
+            right: 22px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 34px;
+            line-height: 1;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -923,7 +967,7 @@
         <input
                 type="text"
                 id="searchInput"
-                placeholder="Пошук запчастин за назвою..."
+                placeholder="Пошук запчастин за назвою або кодом..."
                 oninput="filterProducts()"
         >
         <button onclick="filterProducts()">🔍</button>
@@ -1939,6 +1983,27 @@
     </div>
 </div>
 
+<div
+        class="fullscreen-image-overlay"
+        id="fullscreenImageOverlay"
+        onclick="if (event.target === this) closeFullscreenImg()"
+>
+    <button
+            class="fullscreen-image-close"
+            onclick="closeFullscreenImg()"
+            aria-label="Закрити фото"
+    >
+        ✕
+    </button>
+
+    <img
+            id="fullscreenImage"
+            src=""
+            alt="Фото товару"
+            onclick="event.stopPropagation()"
+    >
+</div>
+
 <script>
     let allProducts = [];
     let cart = [];
@@ -1949,6 +2014,12 @@
     let selectedSingleBrand = null;
 
     let extraBrands = [];
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeFullscreenImg();
+        }
+    });
 
     let contactInfo = JSON.parse(
         localStorage.getItem('contact_info') ||
@@ -2074,6 +2145,13 @@
                 return {
                     ...item,
                     image: imgUrl,
+                    productCode: String(
+                        item.Код_товара ||
+                        item.Код_товару ||
+                        item.productCode ||
+                        item.Идентификатор_товара ||
+                        ''
+                    ).trim(),
                     inStock: finalStock,
                     payments: finalPayments,
                     deliveries: finalDeliveries,
@@ -2616,6 +2694,10 @@
                     ${adminOptionsHtml}
                 </div>
 
+                <div class="product-code">
+                    Код: <b>${item.productCode || item.Код_товара || item.Код_товару || 'Не вказано'}</b>
+                </div>
+
                 <div>
                     <div class="product-price">
                         ${item.price} ₴
@@ -2743,8 +2825,16 @@
             document.getElementById('modalPriceArea');
 
         // Редагування прибрано: назва та ціна відображаються як звичайний текст для всіх
+        const modalProductCode =
+            item.productCode ||
+            item.Код_товара ||
+            item.Код_товару ||
+            item.Идентификатор_товара ||
+            '';
+
         titleArea.innerHTML =
-            `<h2 style="font-size: 18px; color: #111; margin-bottom: 15px; line-height: 1.4;">${item.title}</h2>`;
+            `<h2 style="font-size: 18px; color: #111; margin-bottom: 8px; line-height: 1.4;">${item.title}</h2>` +
+            `<div style="font-size:12px;color:#666;margin-bottom:15px;font-family:monospace;">Код товару: <b style="color:#003366;">${modalProductCode || 'Не вказано'}</b></div>`;
 
         priceArea.innerHTML =
             `<div style="font-size: 24px; font-weight: 800; color: #b12704; margin-bottom: 20px;">${item.price} ₴</div>`;
@@ -2858,7 +2948,31 @@
     }
 
     function openFullscreenImg(src) {
-        window.open(src, '_blank');
+        if (!src) {
+            return;
+        }
+
+        const overlay =
+            document.getElementById('fullscreenImageOverlay');
+
+        const image =
+            document.getElementById('fullscreenImage');
+
+        image.src = src;
+        overlay.classList.add('visible');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeFullscreenImg() {
+        const overlay =
+            document.getElementById('fullscreenImageOverlay');
+
+        const image =
+            document.getElementById('fullscreenImage');
+
+        overlay.classList.remove('visible');
+        image.src = '';
+        document.body.style.overflow = '';
     }
 
     function filterProducts() {
@@ -2891,10 +3005,19 @@
 
         const filtered =
             allProducts.filter(item => {
+                const productCode = String(
+                    item.productCode ||
+                    item.Код_товара ||
+                    item.Код_товару ||
+                    item.Идентификатор_товара ||
+                    ''
+                ).toLowerCase();
+
                 const matchesSearch =
                     item.title
                         .toLowerCase()
-                        .includes(searchText);
+                        .includes(searchText) ||
+                    productCode.includes(searchText);
 
                 const matchesPrice =
                     item.price >= minPrice &&

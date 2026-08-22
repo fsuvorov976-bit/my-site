@@ -34,12 +34,153 @@ const ADMIN_CREDENTIALS = {
         ''
 };
 
+
+/*
+|--------------------------------------------------------------------------
+| КОДЫ ТОВАРОВ
+|--------------------------------------------------------------------------
+| Каждый товар получает уникальный постоянный 8-значный код.
+| Код сохраняется в products.json и одинаковый для всех пользователей.
+|--------------------------------------------------------------------------
+*/
+
 function generate8DigitCode() {
     return Math.floor(
         10000000 +
         Math.random() * 90000000
     ).toString();
 }
+
+function isValid8DigitCode(code) {
+    return /^\d{8}$/.test(
+        String(code || '').trim()
+    );
+}
+
+function generateUnique8DigitCode(usedCodes) {
+    let code;
+
+    do {
+        code = generate8DigitCode();
+    } while (usedCodes.has(code));
+
+    usedCodes.add(code);
+
+    return code;
+}
+
+function getProductExistingCode(product) {
+    if (!product) {
+        return '';
+    }
+
+    const possibleCodes = [
+        product.Код_товара,
+        product.Идентификатор_товара,
+        product.productCode,
+        product.code
+    ];
+
+    for (const code of possibleCodes) {
+        const normalized =
+            String(code || '').trim();
+
+        if (isValid8DigitCode(normalized)) {
+            return normalized;
+        }
+    }
+
+    return '';
+}
+
+function getProductTitleForMatch(product) {
+    if (!product) {
+        return '';
+    }
+
+    return String(
+        product.title ||
+        product.Название_позиции ||
+        product.Название_позиции_укр ||
+        product.Назва ||
+        product.Title ||
+        ''
+    ).trim();
+}
+
+function ensureProductCodes(products) {
+    if (!Array.isArray(products)) {
+        return products;
+    }
+
+    const usedCodes = new Set();
+
+    let changed = false;
+
+    /*
+     * Сначала собираем уже существующие
+     * корректные 8-значные коды.
+     */
+    for (const product of products) {
+        const existingCode =
+            getProductExistingCode(product);
+
+        if (
+            existingCode &&
+            !usedCodes.has(existingCode)
+        ) {
+            usedCodes.add(existingCode);
+        }
+    }
+
+    /*
+     * Затем каждому товару без корректного
+     * уникального кода выдаём новый.
+     */
+    for (const product of products) {
+        if (!product || typeof product !== 'object') {
+            continue;
+        }
+
+        let code =
+            getProductExistingCode(product);
+
+        /*
+         * Если код отсутствует либо оказался
+         * дубликатом — создаём новый.
+         */
+        if (
+            !code ||
+            !product.Код_товара ||
+            String(
+                product.Код_товара
+            ).trim() !== code
+        ) {
+            code =
+                generateUnique8DigitCode(
+                    usedCodes
+                );
+
+            product.Код_товара = code;
+
+            changed = true;
+        } else {
+            product.Код_товара = code;
+        }
+    }
+
+    return {
+        products,
+        changed
+    };
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| JSON
+|--------------------------------------------------------------------------
+*/
 
 function readJsonFile(file, fallback) {
     try {
@@ -89,6 +230,51 @@ function writeJsonFile(file, data) {
     );
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| ТОВАРЫ
+|--------------------------------------------------------------------------
+*/
+
+function getProducts() {
+    const products =
+        readJsonFile(
+            DATA_FILE,
+            []
+        );
+
+    if (!Array.isArray(products)) {
+        return [];
+    }
+
+    /*
+     * Автоматически проверяем старые товары.
+     * Если у товара нет постоянного 8-значного
+     * кода — выдаём его и сохраняем.
+     */
+    const result =
+        ensureProductCodes(
+            products
+        );
+
+    if (result.changed) {
+        writeJsonFile(
+            DATA_FILE,
+            result.products
+        );
+    }
+
+    return result.products;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| БРЕНДЫ
+|--------------------------------------------------------------------------
+*/
+
 function normalizeBrand(value) {
     if (
         value === null ||
@@ -135,18 +321,6 @@ function uniqueBrands(brands) {
                 'uk'
             )
     );
-}
-
-function getProducts() {
-    const products =
-        readJsonFile(
-            DATA_FILE,
-            []
-        );
-
-    return Array.isArray(products)
-        ? products
-        : [];
 }
 
 function getBrands() {
@@ -227,6 +401,13 @@ function syncBrandsFromProducts(products) {
     return allBrands;
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| LOGIN
+|--------------------------------------------------------------------------
+*/
+
 app.post(
     '/api/login',
     (req, res) => {
@@ -253,6 +434,13 @@ app.post(
         });
     }
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| ПОЛУЧЕНИЕ ТОВАРОВ
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     '/api/products',
@@ -283,6 +471,13 @@ app.get(
         }
     }
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| БРЕНДЫ
+|--------------------------------------------------------------------------
+*/
 
 app.get(
     '/api/brands',
@@ -426,6 +621,13 @@ app.delete(
     }
 );
 
+
+/*
+|--------------------------------------------------------------------------
+| ОБНОВЛЕНИЕ ТОВАРА
+|--------------------------------------------------------------------------
+*/
+
 app.post(
     '/api/update-product',
     (req, res) => {
@@ -467,9 +669,32 @@ app.post(
                 });
             }
 
+            /*
+             * Не даём случайно изменить
+             * постоянный код товара.
+             *
+             * Если обновление содержит другой
+             * код — сохраняем старый.
+             */
+            const permanentCode =
+                getProductExistingCode(
+                    products[index]
+                ) ||
+                generateUnique8DigitCode(
+                    new Set(
+                        products
+                            .map(
+                                getProductExistingCode
+                            )
+                            .filter(Boolean)
+                    )
+                );
+
             products[index] = {
                 ...products[index],
-                ...updatedProduct
+                ...updatedProduct,
+                Код_товара:
+                permanentCode
             };
 
             writeJsonFile(
@@ -482,7 +707,9 @@ app.post(
             );
 
             return res.json({
-                success: true
+                success: true,
+                productCode:
+                permanentCode
             });
 
         } catch (error) {
@@ -499,6 +726,13 @@ app.post(
         }
     }
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| ЗАГРУЗКА EXCEL
+|--------------------------------------------------------------------------
+*/
 
 app.post(
     '/api/upload',
@@ -521,6 +755,27 @@ app.post(
 
             const oldBrands =
                 getBrands();
+
+            /*
+             * Собираем все уже существующие
+             * коды, чтобы новые никогда
+             * не получили дубликат.
+             */
+            const usedCodes =
+                new Set();
+
+            oldProducts.forEach(
+                product => {
+                    const code =
+                        getProductExistingCode(
+                            product
+                        );
+
+                    if (code) {
+                        usedCodes.add(code);
+                    }
+                }
+            );
 
             const workbook =
                 xlsx.readFile(
@@ -580,6 +835,11 @@ app.post(
                             row['Title'] ||
                             'Без назви';
 
+                        const normalizedTitle =
+                            String(
+                                title
+                            ).trim();
+
                         const priceValue =
                             String(
                                 row['Цена'] ||
@@ -635,57 +895,84 @@ app.post(
                                     .trim()
                                 : '';
 
-                        let productCode =
-                            row[
-                                'Код_товара'
-                                ] ||
-                            row[
-                                'Идентификатор_товара'
-                                ];
-
-                        if (
-                            !productCode ||
+                        /*
+                         * Ищем уже существующий товар.
+                         *
+                         * Сначала по коду из Excel,
+                         * если он 8-значный.
+                         *
+                         * Затем по названию.
+                         */
+                        const excelCode =
                             String(
-                                productCode
-                            ).trim() === ''
-                        ) {
-                            productCode =
-                                generate8DigitCode();
-                        }
-
-                        productCode =
-                            String(
-                                productCode
+                                row[
+                                    'Код_товара'
+                                    ] ||
+                                row[
+                                    'Идентификатор_товара'
+                                    ] ||
+                                ''
                             ).trim();
 
-                        const existingProduct =
-                            oldProducts.find(
-                                product => {
+                        let existingProduct =
+                            null;
 
-                                    const oldCode =
-                                        String(
-                                            product.Код_товара ||
-                                            product.Идентификатор_товара ||
-                                            ''
-                                        ).trim();
+                        if (
+                            isValid8DigitCode(
+                                excelCode
+                            )
+                        ) {
+                            existingProduct =
+                                oldProducts.find(
+                                    product =>
+                                        getProductExistingCode(
+                                            product
+                                        ) ===
+                                        excelCode
+                                );
+                        }
 
-                                    const oldTitle =
-                                        String(
-                                            product.title ||
-                                            product.Название_позиции ||
-                                            ''
-                                        ).trim();
+                        if (
+                            !existingProduct
+                        ) {
+                            existingProduct =
+                                oldProducts.find(
+                                    product =>
+                                        getProductTitleForMatch(
+                                            product
+                                        ) ===
+                                        normalizedTitle
+                                );
+                        }
 
-                                    return (
-                                        oldCode ===
-                                        productCode ||
-                                        oldTitle ===
-                                        String(
-                                            title
-                                        ).trim()
-                                    );
-                                }
+                        /*
+                         * Самое важное:
+                         *
+                         * если товар уже существует,
+                         * оставляем его постоянный код.
+                         *
+                         * если товара ещё не было —
+                         * создаём новый уникальный 8-значный код.
+                         */
+                        let productCode =
+                            existingProduct
+                                ? getProductExistingCode(
+                                    existingProduct
+                                )
+                                : '';
+
+                        if (
+                            !productCode
+                        ) {
+                            productCode =
+                                generateUnique8DigitCode(
+                                    usedCodes
+                                );
+                        } else {
+                            usedCodes.add(
+                                productCode
                             );
+                        }
 
                         let productType =
                             row[
@@ -772,7 +1059,20 @@ app.post(
                             image:
                             firstImg,
 
+                            /*
+                             * Постоянный 8-значный код.
+                             */
                             Код_товара:
+                            productCode,
+
+                            /*
+                             * Также сохраняем его
+                             * в отдельном поле,
+                             * чтобы фронтенд мог
+                             * использовать любое
+                             * из них при необходимости.
+                             */
+                            productCode:
                             productCode,
 
                             Тип_товара:
@@ -789,6 +1089,18 @@ app.post(
                         return product;
                     }
                 );
+
+            /*
+             * На всякий случай ещё раз проверяем
+             * все товары после импорта.
+             */
+            const ensured =
+                ensureProductCodes(
+                    products
+                );
+
+            const finalProducts =
+                ensured.products;
 
             const manufacturersFromExcel =
                 rows
@@ -818,7 +1130,7 @@ app.post(
                     .filter(Boolean);
 
             const manufacturersFromProducts =
-                products
+                finalProducts
                     .map(
                         getManufacturerFromProduct
                     )
@@ -844,7 +1156,7 @@ app.post(
 
             writeJsonFile(
                 DATA_FILE,
-                products
+                finalProducts
             );
 
             saveBrands(
@@ -866,7 +1178,7 @@ app.post(
                 success: true,
 
                 count:
-                products.length,
+                finalProducts.length,
 
                 brandsCount:
                 allBrands.length,
@@ -907,6 +1219,13 @@ app.post(
         }
     }
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| ЗАКАЗ
+|--------------------------------------------------------------------------
+*/
 
 app.post(
     '/api/order',
@@ -1046,6 +1365,13 @@ app.post(
     }
 );
 
+
+/*
+|--------------------------------------------------------------------------
+| ИНИЦИАЛИЗАЦИЯ
+|--------------------------------------------------------------------------
+*/
+
 if (
     !fs.existsSync(
         BRANDS_FILE
@@ -1071,6 +1397,13 @@ if (
     );
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| ЗАПУСК СЕРВЕРА
+|--------------------------------------------------------------------------
+*/
+
 const PORT =
     process.env.PORT || 3000;
 
@@ -1078,16 +1411,23 @@ app.listen(
     PORT,
     () => {
 
+        const products =
+            getProducts();
+
         console.log(
             `Сервер запущено: http://localhost:${PORT}`
         );
 
         console.log(
-            `Товаров: ${getProducts().length}`
+            `Товаров: ${products.length}`
         );
 
         console.log(
             `Производителей: ${getBrands().length}`
+        );
+
+        console.log(
+            'Постоянные 8-значные коды товаров включены.'
         );
     }
 );
