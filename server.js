@@ -5,1140 +5,153 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
+const upload = multer({ dest: 'uploads/' });
 
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
-const DATA_FILE = path.join(__dirname, 'products.json');
-
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const upload = multer({
-    dest: UPLOAD_DIR
-});
-
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json());
 app.use(express.static(__dirname));
 
-const TELEGRAM_BOT_TOKEN =
-    process.env.TELEGRAM_BOT_TOKEN || '';
+const DATA_FILE = path.join(__dirname, 'products.json');
 
-const TELEGRAM_CHAT_ID =
-    process.env.TELEGRAM_CHAT_ID || '';
+// --- НАЛАШТУВАННЯ TELEGRAM БОТА ---
+const TELEGRAM_BOT_TOKEN = '8732883413:AAG8a_PO13LBzStSJpyMqSDiJyz2rDOrsz4';
+const TELEGRAM_CHAT_ID = '6432307028';
 
+// --- ДАНІ АДМІНІСТРАТОРА ---
 const ADMIN_CREDENTIALS = {
-    username:
-        process.env.ADMIN_USERNAME ||
-        '',
-    password:
-        process.env.ADMIN_PASSWORD ||
-        ''
+    username: 'fsuvorov976@gmail.com',
+    password: '0631023827Aa'
 };
 
+// --- ФУНКЦІЯ ГЕНЕРАЦІЇ 8-ЗНАЧНОГО КОДУ ---
 function generate8DigitCode() {
-    return Math.floor(
-        10000000 +
-        Math.random() * 90000000
-    ).toString();
+    return Math.floor(10000000 + Math.random() * 90000000).toString();
 }
 
-function isValid8DigitCode(code) {
-    return /^\d{8}$/.test(
-        String(code || '').trim()
-    );
-}
+// --- ЕНДПОІНТ АВТОРИЗАЦІЇ АДМІНА ---
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
 
-function generateUnique8DigitCode(usedCodes) {
-    let code;
+    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+        res.json({ success: true });
+    } else {
+        res.json({ success: false, error: 'Невірний логін або пароль' });
+    }
+});
 
-    do {
-        code = generate8DigitCode();
-    } while (usedCodes.has(code));
+app.get('/api/products', (req, res) => {
+    if (fs.existsSync(DATA_FILE)) {
+        const data = fs.readFileSync(DATA_FILE, 'utf8');
+        res.json(JSON.parse(data));
+    } else {
+        res.json([]);
+    }
+});
 
-    usedCodes.add(code);
-
-    return code;
-}
-
-function getProductExistingCode(product) {
-    if (!product) {
-        return '';
+app.post('/api/upload', upload.single('excelFile'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'Файл не завантажено' });
     }
 
-    const possibleCodes = [
-        product.Код_товара,
-        product.Идентификатор_товара,
-        product.productCode,
-        product.code
-    ];
-
-    for (const code of possibleCodes) {
-        const normalized =
-            String(code || '').trim();
-
-        if (isValid8DigitCode(normalized)) {
-            return normalized;
-        }
-    }
-
-    return '';
-}
-
-function getProductTitleForMatch(product) {
-    if (!product) {
-        return '';
-    }
-
-    return String(
-        product.title ||
-        product.Название_позиции ||
-        product.Название_позиции_укр ||
-        product.Назва ||
-        product.Title ||
-        ''
-    ).trim();
-}
-
-function ensureProductCodes(products) {
-    if (!Array.isArray(products)) {
-        return {
-            products,
-            changed: false
-        };
-    }
-
-    const usedCodes = new Set();
-    const assignedCodes = new Set();
-
-    let changed = false;
-
-    for (const product of products) {
-        if (!product || typeof product !== 'object') {
-            continue;
-        }
-
-        const code =
-            getProductExistingCode(product);
-
-        if (code && !usedCodes.has(code)) {
-            usedCodes.add(code);
-        }
-    }
-
-    for (const product of products) {
-        if (!product || typeof product !== 'object') {
-            continue;
-        }
-
-        let code =
-            getProductExistingCode(product);
-
-        if (!code || assignedCodes.has(code)) {
-            code =
-                generateUnique8DigitCode(
-                    usedCodes
-                );
-
-            changed = true;
-        }
-
-        if (
-            String(
-                product.Код_товара || ''
-            ).trim() !== code
-        ) {
-            changed = true;
-        }
-
-        if (
-            String(
-                product.productCode || ''
-            ).trim() !== code
-        ) {
-            changed = true;
-        }
-
-        product.Код_товара = code;
-        product.productCode = code;
-
-        assignedCodes.add(code);
-    }
-
-    return {
-        products,
-        changed
-    };
-}
-
-function readJsonFile(file, fallback) {
     try {
-        if (!fs.existsSync(file)) {
-            return fallback;
-        }
+        const workbook = xlsx.readFile(req.file.path);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonRows = xlsx.utils.sheet_to_json(worksheet);
 
-        const raw =
-            fs.readFileSync(
-                file,
-                'utf8'
-            ).trim();
+        const products = jsonRows.map((row, index) => {
+            const title = row['Название_позиции'] || row['Название_позиции_укр'] || row['Назва'] || row['Title'] || 'Без назви';
+            const price = parseFloat(row['Цена'] || row['Цена_от'] || row['Ціна'] || row['Price'] || 0);
 
-        if (!raw) {
-            return fallback;
-        }
+            const imgUrl = row['Ссылка_изображения'] || row['Изображение'] || row['Фото'] || row['Image'] || '';
+            let firstImg = '';
+            if (imgUrl) {
+                firstImg = imgUrl.toString().split(',')[0].trim();
+            }
 
-        return JSON.parse(raw);
+            // --- ПЕРЕВІРКА ТА ГЕНЕРАЦІЯ 8-ЗНАЧНОГО КОДУ ---
+            let productCode = row['Код_товара'] || row['Идентификатор_товара'];
+            if (!productCode || String(productCode).trim() === '') {
+                productCode = generate8DigitCode();
+            }
 
+            // Автоматичне заповнення типу товару, якщо він порожній
+            let productType = row['Тип_товара'];
+            if (!productType || String(productType).trim() === '') {
+                productType = row['Название_группы'] || 'Не вказано';
+            }
+
+            let manufacturer = row['Производитель'];
+            if (!manufacturer || String(manufacturer).trim() === '') {
+                manufacturer = 'Не вказано';
+            }
+
+            return {
+                ...row,
+                id: index + 1,
+                title: title,
+                price: price,
+                image: firstImg,
+                Код_товара: productCode,
+                Тип_товара: productType,
+                Производитель: manufacturer
+            };
+        });
+
+        fs.writeFileSync(DATA_FILE, JSON.stringify(products, null, 2));
+        fs.unlinkSync(req.file.path);
+
+        res.json({ success: true, count: products.length });
     } catch (error) {
-        console.error(
-            `Ошибка чтения ${file}:`,
-            error
-        );
-
-        return fallback;
+        console.error(error);
+        res.status(500).json({ error: 'Помилка при обробці Excel файлу' });
     }
-}
+});
 
-function writeJsonFile(file, data) {
-    const tempFile =
-        `${file}.tmp`;
+// --- ОБРОБНИК ЗАМОВЛЕНЬ ДЛЯ TELEGRAM ---
+app.post('/api/order', async (req, res) => {
+    const { lastName, firstName, phone, cart, total, delivery, deliveryDetails, payment } = req.body;
 
-    fs.writeFileSync(
-        tempFile,
-        JSON.stringify(
-            data,
-            null,
-            2
-        ),
-        'utf8'
-    );
+    let message = `🛒 <b>Нове замовлення!</b>\n\n`;
+    message += `👤 <b>Клієнт:</b> ${lastName} ${firstName}\n`;
+    message += `📞 <b>Телефон:</b> ${phone}\n`;
+    message += `🚚 <b>Доставка:</b> ${delivery}\n`;
+    message += `📍 <b>Відділення/Адреса:</b> ${deliveryDetails || 'Не вказано'}\n`;
+    message += `💳 <b>Оплата:</b> ${payment}\n\n`;
+    message += `📦 <b>Товари:</b>\n`;
 
-    fs.renameSync(
-        tempFile,
-        file
-    );
-}
-
-function getManufacturerFromProduct(product) {
-    if (!product) {
-        return '';
-    }
-
-    return String(
-        product.Производитель ||
-        product.Виробник ||
-        product.Manufacturer ||
-        product.manufacturer ||
-        product.Brand ||
-        product.brand ||
-        ''
-    ).trim();
-}
-
-function ensureProductManufacturers(products) {
-    if (!Array.isArray(products)) {
-        return {
-            products,
-            changed: false
-        };
-    }
-
-    let changed = false;
-
-    for (const product of products) {
-        if (!product || typeof product !== 'object') {
-            continue;
-        }
-
-        const manufacturer =
-            getManufacturerFromProduct(product) ||
-            'Не вказано';
-
-        if (
-            String(
-                product.Производитель || ''
-            ).trim() !== manufacturer
-        ) {
-            product.Производитель =
-                manufacturer;
-
-            changed = true;
-        }
-    }
-
-    return {
-        products,
-        changed
-    };
-}
-
-function getProducts() {
-    const products =
-        readJsonFile(
-            DATA_FILE,
-            []
-        );
-
-    if (!Array.isArray(products)) {
-        return [];
-    }
-
-    const codes =
-        ensureProductCodes(
-            products
-        );
-
-    const manufacturers =
-        ensureProductManufacturers(
-            codes.products
-        );
-
-    const changed =
-        codes.changed ||
-        manufacturers.changed;
-
-    if (changed) {
-        writeJsonFile(
-            DATA_FILE,
-            manufacturers.products
-        );
-    }
-
-    return manufacturers.products;
-}
-
-app.post(
-    '/api/login',
-    (req, res) => {
-        const {
-            username,
-            password
-        } = req.body || {};
-
-        if (
-            username ===
-            ADMIN_CREDENTIALS.username &&
-            password ===
-            ADMIN_CREDENTIALS.password
-        ) {
-            return res.json({
-                success: true
-            });
-        }
-
-        return res.json({
-            success: false,
-            error:
-                'Невірний логін або пароль'
+    if (cart && Array.isArray(cart)) {
+        cart.forEach((item, index) => {
+            message += `${index + 1}. ${item.title} — ${item.price} ₴\n`;
         });
     }
-);
 
-app.get(
-    '/api/products',
-    (req, res) => {
-        try {
-            const products =
-                getProducts();
+    message += `\n💰 <b>Разом до сплати:</b> ${total} ₴`;
 
-            return res.json(
-                products
-            );
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: message,
+                parse_mode: 'HTML'
+            })
+        });
 
-        } catch (error) {
-            console.error(
-                'Ошибка получения товаров:',
-                error
-            );
-
-            return res.status(500).json({
-                success: false,
-                error:
-                    'Помилка читання товарів'
-            });
+        const result = await telegramResponse.json();
+        if (result.ok) {
+            res.json({ success: true });
+        } else {
+            console.error('Telegram API error:', result);
+            res.json({ success: false, error: result.description });
         }
+    } catch (error) {
+        console.error('Помилка відправки в Telegram:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
-);
-
-app.post(
-    '/api/delete-products',
-    (req, res) => {
-        try {
-            const codes =
-                Array.isArray(
-                    req.body &&
-                    req.body.codes
-                )
-                    ? req.body.codes
-                        .map(code =>
-                            String(
-                                code || ''
-                            ).trim()
-                        )
-                        .filter(Boolean)
-                    : [];
-
-            const titles =
-                Array.isArray(
-                    req.body &&
-                    req.body.titles
-                )
-                    ? req.body.titles
-                        .map(title =>
-                            String(
-                                title || ''
-                            ).trim()
-                        )
-                        .filter(Boolean)
-                    : [];
-
-            if (
-                codes.length === 0 &&
-                titles.length === 0
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    error:
-                        'Не вибрано товари для видалення'
-                });
-            }
-
-            const codeSet =
-                new Set(codes);
-
-            const titleSet =
-                new Set(titles);
-
-            const products =
-                getProducts();
-
-            const deleted = [];
-            const remaining = [];
-
-            for (const product of products) {
-                const code =
-                    getProductExistingCode(
-                        product
-                    );
-
-                const title =
-                    getProductTitleForMatch(
-                        product
-                    );
-
-                if (
-                    codeSet.has(code) ||
-                    (
-                        !code &&
-                        titleSet.has(title)
-                    )
-                ) {
-                    deleted.push(
-                        product
-                    );
-                } else {
-                    remaining.push(
-                        product
-                    );
-                }
-            }
-
-            writeJsonFile(
-                DATA_FILE,
-                remaining
-            );
-
-            return res.json({
-                success: true,
-                deletedCount:
-                deleted.length,
-                products:
-                remaining
-            });
-
-        } catch (error) {
-            console.error(
-                'Ошибка массового удаления товаров:',
-                error
-            );
-
-            return res.status(500).json({
-                success: false,
-                error:
-                    'Помилка масового видалення товарів'
-            });
-        }
-    }
-);
-
-app.post(
-    '/api/update-product',
-    (req, res) => {
-        const updatedProduct =
-            req.body || {};
-
-        if (
-            !fs.existsSync(
-                DATA_FILE
-            )
-        ) {
-            return res.status(404).json({
-                success: false,
-                error:
-                    'Файл з даними не знайдено'
-            });
-        }
-
-        try {
-            const products =
-                getProducts();
-
-            const index =
-                products.findIndex(
-                    product =>
-                        product.title ===
-                        updatedProduct.title ||
-                        product.id ===
-                        updatedProduct.id ||
-                        product.Код_товара ===
-                        updatedProduct.Код_товара ||
-                        product.Код_товара ===
-                        updatedProduct.productCode
-                );
-
-            if (index === -1) {
-                return res.status(404).json({
-                    success: false,
-                    error:
-                        'Товар не знайдено'
-                });
-            }
-
-            const usedCodes =
-                new Set(
-                    products
-                        .map(
-                            getProductExistingCode
-                        )
-                        .filter(Boolean)
-                );
-
-            const permanentCode =
-                getProductExistingCode(
-                    products[index]
-                ) ||
-                generateUnique8DigitCode(
-                    usedCodes
-                );
-
-            const oldManufacturer =
-                getManufacturerFromProduct(
-                    products[index]
-                );
-
-            const newManufacturer =
-                getManufacturerFromProduct(
-                    updatedProduct
-                ) ||
-                oldManufacturer ||
-                'Не вказано';
-
-            products[index] = {
-                ...products[index],
-                ...updatedProduct,
-
-                Код_товара:
-                permanentCode,
-
-                productCode:
-                permanentCode,
-
-                Производитель:
-                newManufacturer
-            };
-
-            writeJsonFile(
-                DATA_FILE,
-                products
-            );
-
-            return res.json({
-                success: true,
-                productCode:
-                permanentCode,
-                product:
-                    products[index]
-            });
-
-        } catch (error) {
-            console.error(
-                'Ошибка обновления товара:',
-                error
-            );
-
-            return res.status(500).json({
-                success: false,
-                error:
-                    'Помилка збереження товару'
-            });
-        }
-    }
-);
-
-app.post(
-    '/api/upload',
-    upload.single(
-        'excelFile'
-    ),
-    (req, res) => {
-
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                error:
-                    'Файл не завантажено'
-            });
-        }
-
-        try {
-            const oldProducts =
-                getProducts();
-
-            const usedCodes =
-                new Set();
-
-            oldProducts.forEach(
-                product => {
-                    const code =
-                        getProductExistingCode(
-                            product
-                        );
-
-                    if (code) {
-                        usedCodes.add(
-                            code
-                        );
-                    }
-                }
-            );
-
-            const workbook =
-                xlsx.readFile(
-                    req.file.path
-                );
-
-            if (
-                !workbook.SheetNames ||
-                workbook.SheetNames.length === 0
-            ) {
-                throw new Error(
-                    'В Excel-файле нет листов'
-                );
-            }
-
-            let worksheet =
-                workbook.Sheets[
-                    workbook.SheetNames[0]
-                    ];
-
-            let rows =
-                xlsx.utils.sheet_to_json(
-                    worksheet,
-                    {
-                        defval: '',
-                        raw: false
-                    }
-                );
-
-            if (
-                rows.length === 0 &&
-                workbook.SheetNames.length > 1
-            ) {
-                worksheet =
-                    workbook.Sheets[
-                        workbook.SheetNames[1]
-                        ];
-
-                rows =
-                    xlsx.utils.sheet_to_json(
-                        worksheet,
-                        {
-                            defval: '',
-                            raw: false
-                        }
-                    );
-            }
-
-            const products =
-                rows.map(
-                    (row, index) => {
-
-                        const title =
-                            row[
-                                'Название_позиции'
-                                ] ||
-                            row[
-                                'Название_позиции_укр'
-                                ] ||
-                            row[
-                                'Назва'
-                                ] ||
-                            row[
-                                'Title'
-                                ] ||
-                            'Без назви';
-
-                        const normalizedTitle =
-                            String(
-                                title
-                            ).trim();
-
-                        const priceValue =
-                            String(
-                                row['Цена'] ||
-                                row['Цена_от'] ||
-                                row['Ціна'] ||
-                                row['Price'] ||
-                                '0'
-                            )
-                                .replace(
-                                    /\s/g,
-                                    ''
-                                )
-                                .replace(
-                                    ',',
-                                    '.'
-                                );
-
-                        const parsedPrice =
-                            parseFloat(
-                                priceValue
-                            );
-
-                        const price =
-                            Number.isFinite(
-                                parsedPrice
-                            )
-                                ? parsedPrice
-                                : 0;
-
-                        const imgUrl =
-                            row[
-                                'Ссылка_изображения'
-                                ] ||
-                            row[
-                                'Изображение'
-                                ] ||
-                            row[
-                                'Фото'
-                                ] ||
-                            row[
-                                'Image'
-                                ] ||
-                            '';
-
-                        const firstImg =
-                            imgUrl
-                                ? String(
-                                    imgUrl
-                                )
-                                    .split(
-                                        ','
-                                    )[0]
-                                    .trim()
-                                : '';
-
-                        const excelCode =
-                            String(
-                                row[
-                                    'Код_товара'
-                                    ] ||
-                                row[
-                                    'Идентификатор_товара'
-                                    ] ||
-                                ''
-                            ).trim();
-
-                        let existingProduct =
-                            null;
-
-                        if (
-                            isValid8DigitCode(
-                                excelCode
-                            )
-                        ) {
-                            existingProduct =
-                                oldProducts.find(
-                                    product =>
-                                        getProductExistingCode(
-                                            product
-                                        ) ===
-                                        excelCode
-                                );
-                        }
-
-                        if (
-                            !existingProduct
-                        ) {
-                            existingProduct =
-                                oldProducts.find(
-                                    product =>
-                                        getProductTitleForMatch(
-                                            product
-                                        ) ===
-                                        normalizedTitle
-                                );
-                        }
-
-                        let productCode =
-                            existingProduct
-                                ? getProductExistingCode(
-                                    existingProduct
-                                )
-                                : '';
-
-                        if (!productCode) {
-                            productCode =
-                                generateUnique8DigitCode(
-                                    usedCodes
-                                );
-                        } else {
-                            usedCodes.add(
-                                productCode
-                            );
-                        }
-
-                        let productType =
-                            row[
-                                'Тип_товара'
-                                ] ||
-                            row[
-                                'Тип товару'
-                                ];
-
-                        if (
-                            !productType ||
-                            String(
-                                productType
-                            ).trim() === ''
-                        ) {
-                            productType =
-                                row[
-                                    'Название_группы'
-                                    ] ||
-                                row[
-                                    'Назва_групи'
-                                    ] ||
-                                (
-                                    existingProduct &&
-                                    (
-                                        existingProduct.Тип_товара ||
-                                        existingProduct['Тип товару']
-                                    )
-                                ) ||
-                                'Не вказано';
-                        }
-
-                        let manufacturer =
-                            row[
-                                'Производитель'
-                                ] ||
-                            row[
-                                'Виробник'
-                                ] ||
-                            row[
-                                'Manufacturer'
-                                ] ||
-                            row[
-                                'Производитель_товара'
-                                ] ||
-                            row[
-                                'Бренд'
-                                ] ||
-                            row[
-                                'Brand'
-                                ] ||
-                            '';
-
-                        if (
-                            !manufacturer ||
-                            String(
-                                manufacturer
-                            ).trim() === ''
-                        ) {
-                            manufacturer =
-                                getManufacturerFromProduct(
-                                    existingProduct
-                                );
-                        }
-
-                        manufacturer =
-                            String(
-                                manufacturer || ''
-                            ).trim();
-
-                        const product = {
-                            ...row,
-
-                            id:
-                                index + 1,
-
-                            title:
-                                String(
-                                    title
-                                ),
-
-                            price,
-
-                            image:
-                            firstImg,
-
-                            Код_товара:
-                            productCode,
-
-                            productCode:
-                            productCode,
-
-                            Тип_товара:
-                                String(
-                                    productType ||
-                                    'Не вказано'
-                                ),
-
-                            Производитель:
-                                manufacturer ||
-                                'Не вказано'
-                        };
-
-                        return product;
-                    }
-                );
-
-            const ensured =
-                ensureProductCodes(
-                    products
-                );
-
-            const finalProducts =
-                ensured.products;
-
-            writeJsonFile(
-                DATA_FILE,
-                finalProducts
-            );
-
-            try {
-                fs.unlinkSync(
-                    req.file.path
-                );
-            } catch (error) {
-                console.warn(
-                    'Не удалось удалить временный файл:',
-                    error.message
-                );
-            }
-
-            return res.json({
-                success: true,
-
-                count:
-                finalProducts.length
-            });
-
-        } catch (error) {
-
-            console.error(
-                'Ошибка обработки Excel:',
-                error
-            );
-
-            try {
-                if (
-                    req.file &&
-                    fs.existsSync(
-                        req.file.path
-                    )
-                ) {
-                    fs.unlinkSync(
-                        req.file.path
-                    );
-                }
-            } catch (_) {}
-
-            return res.status(500).json({
-                success: false,
-
-                error:
-                    'Помилка при обробці Excel файлу',
-
-                details:
-                error.message
-            });
-        }
-    }
-);
-
-app.post(
-    '/api/order',
-    async (req, res) => {
-
-        const {
-            lastName,
-            firstName,
-            phone,
-            cart,
-            total,
-            delivery,
-            deliveryDetails,
-            payment
-        } = req.body || {};
-
-        let message =
-            `🛒 <b>Нове замовлення!</b>\n\n`;
-
-        message +=
-            `👤 <b>Клієнт:</b> ` +
-            `${lastName || ''} ` +
-            `${firstName || ''}\n`;
-
-        message +=
-            `📞 <b>Телефон:</b> ` +
-            `${phone || ''}\n`;
-
-        message +=
-            `🚚 <b>Доставка:</b> ` +
-            `${delivery || ''}\n`;
-
-        message +=
-            `📍 <b>Відділення/Адреса:</b> ` +
-            `${deliveryDetails || 'Не вказано'}\n`;
-
-        message +=
-            `💳 <b>Оплата:</b> ` +
-            `${payment || ''}\n\n`;
-
-        message +=
-            `📦 <b>Товари:</b>\n`;
-
-        if (
-            cart &&
-            Array.isArray(cart)
-        ) {
-            cart.forEach(
-                (item, index) => {
-
-                    message +=
-                        `${index + 1}. ` +
-                        `${item.title || ''} — ` +
-                        `${item.price || 0} ₴`;
-
-                    if (
-                        item.Код_товара ||
-                        item.productCode
-                    ) {
-                        message +=
-                            ` [код: ${
-                                item.Код_товара ||
-                                item.productCode
-                            }]`;
-                    }
-
-                    message += '\n';
-                }
-            );
-        }
-
-        message +=
-            `\n💰 <b>Разом до сплати:</b> ` +
-            `${total || 0} ₴`;
-
-        if (
-            !TELEGRAM_BOT_TOKEN ||
-            !TELEGRAM_CHAT_ID
-        ) {
-            return res.status(500).json({
-                success: false,
-                error:
-                    'Telegram не налаштовано на сервері'
-            });
-        }
-
-        try {
-
-            const fetch =
-                (
-                    await import(
-                        'node-fetch'
-                        )
-                ).default;
-
-            const telegramResponse =
-                await fetch(
-                    `https://api.telegram.org/` +
-                    `bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-                    {
-                        method: 'POST',
-
-                        headers: {
-                            'Content-Type':
-                                'application/json'
-                        },
-
-                        body:
-                            JSON.stringify({
-                                chat_id:
-                                TELEGRAM_CHAT_ID,
-
-                                text:
-                                message,
-
-                                parse_mode:
-                                    'HTML'
-                            })
-                    }
-                );
-
-            const result =
-                await telegramResponse.json();
-
-            if (result.ok) {
-                return res.json({
-                    success: true
-                });
-            }
-
-            return res.json({
-                success: false,
-                error:
-                result.description
-            });
-
-        } catch (error) {
-
-            console.error(
-                'Ошибка Telegram:',
-                error
-            );
-
-            return res.status(500).json({
-                success: false,
-                error:
-                error.message
-            });
-        }
-    }
-);
-
-const PORT =
-    process.env.PORT || 3000;
-
-app.listen(
-    PORT,
-    () => {
-
-        console.log(
-            `Сервер запущено: http://localhost:${PORT}`
-        );
-
-        console.log(
-            `Товаров: ${getProducts().length}`
-        );
-    }
-);
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Сервер запущено! Відкрийте: http://localhost:${PORT}`);
+});
